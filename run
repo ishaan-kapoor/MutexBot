@@ -1,4 +1,4 @@
 #!/bin/sh
-mvn package && mvn install && java -jar ./target/bot-teams-conversation-sample.jar;
+mvn install && java -jar target/MutexBot-0.1.jar;
 mvn clean
 

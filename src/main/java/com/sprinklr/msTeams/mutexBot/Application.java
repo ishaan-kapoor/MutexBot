@@ -30,6 +30,9 @@ import org.springframework.context.annotation.Import;
  */
 public class Application extends BotDependencyConfiguration {
     public static void main(String[] args) {
+      System.out.println("Hello MutexBot!");
+      MongoConnect.main(args);
+      System.out.println("Hola MutexBot!");
         SpringApplication.run(Application.class, args);
     }
 

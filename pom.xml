@@ -6,13 +6,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.sprinklr.msTeams.mutexBot</groupId>
-    <artifactId>bot-teams-conversation</artifactId>
-    <version>sample</version>
+    <artifactId>MutexBot</artifactId>
+    <version>0.1</version>
     <packaging>jar</packaging>
 
-    <name>${project.groupId}:${project.artifactId}</name>
-    <description>This package contains a Java Teams Conversation sample using Spring Boot.</description>
-    <url>http://maven.apache.org</url>
+    <name>MutexBot</name>
+    <description>A Microsoft Teams bot designed to manage access to critical resources like servers, enabling users to reserve and release resources seamlessly, prevent conflicts, enhance collaboration, and receive timely notifications.</description>
+    <url>https://www.sprinklr.com/</url>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -21,19 +21,12 @@
         <relativePath/>
     </parent>
 
-    <licenses>
-        <license>
-            <name>MIT License</name>
-            <url>http://www.opensource.org/licenses/mit-license.php</url>
-        </license>
-    </licenses>
-
     <developers>
         <developer>
-            <name>Bot Framework Development</name>
-            <email></email>
-            <organization>Microsoft</organization>
-            <organizationUrl>https://dev.botframework.com/</organizationUrl>
+            <name>Ishaan Kapoor</name>
+            <email>ishaankapoor2506@gmail.com</email>
+            <organization>Sprinklr</organization>
+            <organizationUrl>https://www.sprinklr.com/</organizationUrl>
         </developer>
     </developers>
 
@@ -102,10 +95,10 @@
         <scope>compile</scope>
       </dependency>
 
-      <!-- <dependency> -->
-      <!--   <groupId>org.springframework.boot</groupId> -->
-      <!--   <artifactId>spring-boot-starter-data-mongodb</artifactId> -->
-      <!-- </dependency> -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-mongodb</artifactId>
+      </dependency>
   </dependencies>
 
   <profiles>

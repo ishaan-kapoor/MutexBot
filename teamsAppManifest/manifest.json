@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.5/MicrosoftTeams.schema.json",
   "manifestVersion": "1.5",
-  "version": "1.0.0",
+  "version": "0.1",
   "id": "4ea2018c-ea0d-4c37-b902-77345757db06",
   "packageName": "com.sprinklr.msTeams.mutexBot",
   "developer": {
@@ -26,41 +26,42 @@
   "bots": [
     {
       "botId": "4ea2018c-ea0d-4c37-b902-77345757db06",
-      "scopes": [
-        "personal",
-        "groupchat",
-        "team"
-      ],
-      "supportsFiles": false,
+      "scopes": ["personal", "groupchat", "team"],
       "isNotificationOnly": false,
+      "supportsFiles": false,
       "commandLists": [
         {
-          "scopes": [
-            "personal",
-            "groupchat",
-            "team"
-          ],
+          "scopes": ["personal", "groupchat", "team"],
           "commands": [
             {
-              "title": "Reserve: ",
+              "title": "Reserve",
               "description": "Reserve the resource."
             },
             {
-              "title": "Release: ",
+              "title": "Release",
               "description": "Release the resource."
             },
             {
-              "title": "Monitor: ",
+              "title": "Monitor",
               "description": "Monitor the resource and notify when it is reserved or released."
+            },
+            {
+              "title": "for",
+              "description": "Specify the duration of the action."
+            },
+            {
+              "title": "after",
+              "description": "Specify the delay before the given action is performed."
+            },
+            {
+              "title": "StopMonitoring",
+              "description": "Stop recieving notifications about the resource."
             }
           ]
         }
       ]
     }
   ],
-  "permissions": [
-    "identity",
-    "messageTeamMembers"
-  ],
+  "permissions": ["identity", "messageTeamMembers"],
   "validDomains": ["e0a1-14-98-125-202.ngrok-free.app"]
 }

@@ -14,6 +14,7 @@ import com.microsoft.bot.schema.ActionTypes;
 import com.microsoft.bot.schema.Activity;
 import com.microsoft.bot.schema.Attachment;
 import com.microsoft.bot.schema.CardAction;
+import com.microsoft.bot.schema.ChannelAccount;
 import com.microsoft.bot.schema.ConversationParameters;
 import com.microsoft.bot.schema.ConversationReference;
 import com.microsoft.bot.schema.HeroCard;
@@ -26,12 +27,14 @@ import org.apache.commons.io.IOUtils;
 
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -48,6 +51,23 @@ import java.nio.charset.StandardCharsets;
 public class TeamsConversationBot extends TeamsActivityHandler {
   private String appId;
   private String appPassword;
+  private static String defaultDelay = "0m";
+  private static String defaultDuration = "1h";
+
+  private static int timeString2Int(String time) {
+    int hours = 0, minutes = 0;
+
+    String[] parts = time.split("(?<=\\D)(?=\\d)");
+    for (String part : parts) {
+      if (part.endsWith("h")) {
+        hours = Integer.parseInt(part.substring(0, part.length() - 1));
+      } else if (part.endsWith("m")) {
+        minutes = Integer.parseInt(part.substring(0, part.length() - 1));
+      }
+    }
+
+    return hours * 60 + minutes;
+  }
 
   public TeamsConversationBot(Configuration configuration) {
     appId = configuration.getProperty("MicrosoftAppId");
@@ -56,32 +76,52 @@ public class TeamsConversationBot extends TeamsActivityHandler {
 
   private static final String ADAPTIVE_CARD_TEMPLATE = "UserMentionCardTemplate.json";
 
+  private static List<Object> getParams(String[] message) {
+    String action = message[0].trim().toLowerCase();
+    String resource = message[1].trim();
+    int duration = timeString2Int(defaultDuration);
+    int delay = timeString2Int(defaultDelay);
+    for (int i = 2; i < message.length - 1; i += 2) {
+      if (message[i].toLowerCase().equals("for")) {
+        duration = timeString2Int(message[i + 1].toLowerCase());
+      } else if (message[i].toLowerCase().equals("after")) {
+        delay = timeString2Int(message[i + 1].toLowerCase());
+      }
+    }
+    return Arrays.asList(action, resource, duration, delay);
+  }
+
   @Override
   protected CompletableFuture<Void> onMessageActivity(TurnContext turnContext) {
     turnContext.getActivity().removeRecipientMention();
-    String[] message = turnContext.getActivity().getText().trim().split(":", 2);
+
+    TeamsChannelAccount user = TeamsInfo.getMember(turnContext, turnContext.getActivity().getFrom().getId()).join();
+    String[] message = turnContext.getActivity().getText().trim().split(" ");
     if (message.length == 0) {
       return sendMessage(turnContext, "Something went wrong.");
     } else if (message.length == 1) {
-      return sendMessage(turnContext, "Invalid Message:\n\t"+message[0]);
-    } else if (message.length == 3) {
-      String tmp = "This wasn't supposed to happen. Recieved this:\n\t";
-      for (String c: message) { tmp += ":"+c; }
-      return sendMessage(turnContext,tmp);
+      return sendMessage(turnContext, "Invalid Message:\n\t" + message[0]);
     }
-    String action = message[0].trim().toLowerCase();
-    String resource = message[1].trim();
+    List<Object> params = getParams(message);
+    String action = (String) params.get(0);
+    String resource = (String) params.get(1);
+    int duration = (Integer) params.get(2);
+    int delay = (Integer) params.get(3);
 
+    Activity response = null;
     if (action.equals("reserve")) {
-      return reserveResource(turnContext, resource);
+      response = reserveResource(user, resource, duration, delay);
     } else if (action.equals("release")) {
-      return releaseResource(turnContext, resource);
+      response = releaseResource(user, resource, delay);
     } else if (action.equals("monitor")) {
-      return monitorResource(turnContext, resource);
+      response = monitorResource(user, resource, duration);
+    } else if (action.equals("stopmonitoring")) {
+      response = stopMonitoringResource(user, resource, delay);
     } else {
-      return sendMessage(turnContext, "Unsure about the action on Resource: \""+resource+"\".\nRecieved action: \""+action+"\".");
+      response = MessageFactory.text(
+          String.format("Unsure about the action on Resource: \"%s\".\nRecieved action: \"%s\".", resource, action));
     }
-
+    return sendMessage(turnContext, response);
 
     // if (text.contains("mention me")) {
     // return mentionAdaptiveCardActivityAsync(turnContext);
@@ -100,20 +140,85 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     // }
   }
 
-  private CompletableFuture<Void> monitorResource(TurnContext turnContext, String resource) {
-    return sendMessage(turnContext, "Monitoring \""+resource+"\".");
+  private Activity stopMonitoringResource(TeamsChannelAccount user, String resource, int delay) {
+    Mention mention = mentionUser(user);
+    String userName = (mention != null) ? mention.getText() : user.getName();
+    String message;
+    if (delay > 0) {
+      message = String.format("%s will stop monitoring \"%s\" after %d minutes.", userName, resource, delay);
+    } else {
+      message = String.format("%s stopped monitoring \"%s\".", userName, resource);
+    }
+    Activity response = MessageFactory.text(message);
+    if (mention != null) {
+      response.setMentions(Collections.singletonList(mention));
+    }
+    return response;
   }
 
-  private CompletableFuture<Void> releaseResource(TurnContext turnContext, String resource) {
-    return sendMessage(turnContext, "Released \""+resource+"\".");
+  private Activity monitorResource(TeamsChannelAccount user, String resource, int duration) {
+    Mention mention = mentionUser(user);
+    String userName = (mention != null) ? mention.getText() : user.getName();
+    String message = String.format("%s is monitoring \"%s\" for %d minutes.", userName, resource, duration);
+    Activity response = MessageFactory.text(message);
+    if (mention != null) {
+      response.setMentions(Collections.singletonList(mention));
+    }
+    return response;
   }
 
-  private CompletableFuture<Void> reserveResource(TurnContext turnContext, String resource) {
-    return sendMessage(turnContext, "Reserved \""+resource+"\".");
+  private Activity releaseResource(TeamsChannelAccount user, String resource, int delay) {
+    Mention mention = mentionUser(user);
+    String message;
+    String userName = (mention != null) ? mention.getText() : user.getName();
+    if (delay > 0) {
+      message = String.format("%s will release \"%s\" after %d minutes.", userName, resource, delay);
+    } else {
+      message = String.format("%s released \"%s\".", userName, resource);
+    }
+    Activity response = MessageFactory.text(message);
+    if (mention != null) {
+      response.setMentions(Collections.singletonList(mention));
+    }
+    return response;
+  }
+
+  private Activity reserveResource(TeamsChannelAccount user, String resource, int duration, int delay) {
+    Mention mention = mentionUser(user);
+    String message;
+    String userName = (mention != null) ? mention.getText() : user.getName();
+    if (delay > 0) {
+      message = String.format("%s will reserve \"%s\" for %d minutes, after %d minutes.", userName, resource, duration, delay);
+    } else {
+      message = String.format("%s reserved \"%s\" for %d minutes.", userName, resource, duration);
+    }
+    Activity response = MessageFactory.text(message);
+    if (mention != null) {
+      response.setMentions(Collections.singletonList(mention));
+    }
+    return response;
   }
 
   private CompletableFuture<Void> sendMessage(TurnContext turnContext, String message) {
-    return turnContext.sendActivity(MessageFactory.text(message)).thenApply(resourceResponses -> null);
+    if (message == null) { message = new String(); }
+    Activity replyActivity = MessageFactory.text(message);
+    return sendMessage(turnContext, replyActivity);
+  }
+
+  private Mention mentionUser(ChannelAccount user) {
+    Mention mention = new Mention();
+    mention.setMentioned(user);
+    try {
+      mention.setText("<at>" + URLEncoder.encode(user.getName(), "UTF-8") + "</at>");
+    } catch (UnsupportedEncodingException e) {
+      e.printStackTrace();
+      return null;
+    }
+    return mention;
+  }
+
+  private CompletableFuture<Void> sendMessage(TurnContext turnContext, Activity message) {
+    return turnContext.sendActivity(message).thenApply(resourceResponse -> null);
   }
 
   @Override
@@ -126,10 +231,7 @@ public class TeamsConversationBot extends TeamsActivityHandler {
             member -> !StringUtils
                 .equals(member.getId(), turnContext.getActivity().getRecipient().getId()))
         .map(
-            channel -> turnContext.sendActivity(
-                MessageFactory.text(
-                    "Welcome to the team " + channel.getGivenName() + " " + channel.getSurname()
-                        + ".")))
+            channel -> turnContext.sendActivity(MessageFactory.text("Welcome to the team " + channel.getGivenName() + " " + channel.getSurname() + ".")))
         .collect(CompletableFutures.toFutureList())
         .thenApply(resourceResponses -> null);
   }
@@ -310,8 +412,11 @@ public class TeamsConversationBot extends TeamsActivityHandler {
   private CompletableFuture<Void> mentionActivity(TurnContext turnContext) {
     Mention mention = new Mention();
     mention.setMentioned(turnContext.getActivity().getFrom());
-    mention.setText(
-        "<at>" + URLEncoder.encode(turnContext.getActivity().getFrom().getName()) + "</at>");
+    try {
+      mention.setText("<at>" + URLEncoder.encode(turnContext.getActivity().getFrom().getName(), "UTF-8") + "</at>");
+    } catch (UnsupportedEncodingException e) {
+      e.printStackTrace();
+    }
 
     Activity replyActivity = MessageFactory.text("Hello " + mention.getText() + ".");
     replyActivity.setMentions(Collections.singletonList(mention));
