@@ -53,6 +53,7 @@ public class Resource {
     while (iterator.hasNext()) {
       if (iterator.next().user.equals(user)) {
         iterator.remove();
+        break;
       }
     }
   }

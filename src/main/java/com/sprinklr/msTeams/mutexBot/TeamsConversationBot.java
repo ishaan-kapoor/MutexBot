@@ -139,10 +139,20 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     // }
   }
 
-  private Activity stopMonitoringResource(TeamsChannelAccount user, String resource) {
+  private Activity stopMonitoringResource(TeamsChannelAccount user, String resource_name) {
+    Resource resource_obj;
+    try {
+      resource_obj = resourceService.find(resource_name);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return MessageFactory.text("Exception while fetching resource.");
+    }
+    resource_obj.stopMonitoring(user.getAadObjectId());
+    resourceService.save(resource_obj);
+
     Mention mention = mentionUser(user);
     String userName = (mention != null) ? mention.getText() : user.getName();
-    String message = String.format("%s stopped monitoring \"%s\".", userName, resource);
+    String message = String.format("%s stopped monitoring \"%s\".", userName, resource_name);
     Activity response = MessageFactory.text(message);
     if (mention != null) {
       response.setMentions(Collections.singletonList(mention));
@@ -150,10 +160,21 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     return response;
   }
 
-  private Activity monitorResource(TeamsChannelAccount user, String resource, int duration) {
+  private Activity monitorResource(TeamsChannelAccount user, String resource_name, int duration) {
+    Resource resource_obj;
+    try {
+      resource_obj = resourceService.find(resource_name);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return MessageFactory.text("Exception while fetching resource.");
+    }
+    LocalDateTime monitorTill = LocalDateTime.now().plusMinutes(duration);
+    resource_obj.monitor(user.getAadObjectId(), monitorTill);
+    resourceService.save(resource_obj);
+
     Mention mention = mentionUser(user);
     String userName = (mention != null) ? mention.getText() : user.getName();
-    String message = String.format("%s is monitoring \"%s\" for %d minutes.", userName, resource, duration);
+    String message = String.format("%s is monitoring \"%s\" till %s.", userName, resource_name, monitorTill);
     Activity response = MessageFactory.text(message);
     if (mention != null) {
       response.setMentions(Collections.singletonList(mention));
