@@ -22,7 +22,13 @@ import com.microsoft.bot.schema.Mention;
 import com.microsoft.bot.schema.Serialization;
 import com.microsoft.bot.schema.teams.TeamInfo;
 import com.microsoft.bot.schema.teams.TeamsChannelAccount;
+import com.sprinklr.msTeams.mutexBot.model.Resource;
+import com.sprinklr.msTeams.mutexBot.model.User;
+import com.sprinklr.msTeams.mutexBot.service.ResourceService;
+import com.sprinklr.msTeams.mutexBot.service.UserService;
+
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.apache.commons.io.IOUtils;
 
 import java.net.URLEncoder;
@@ -37,6 +43,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 
 /**
  * This class implements the functionality of the Bot.
@@ -51,7 +58,10 @@ import java.nio.charset.StandardCharsets;
 public class TeamsConversationBot extends TeamsActivityHandler {
   private String appId;
   private String appPassword;
-  private static String defaultDelay = "0m";
+  @Autowired
+  private ResourceService resourceService;
+  @Autowired
+  private UserService userService;
   private static String defaultDuration = "1h";
 
   private static int timeString2Int(String time) {
@@ -76,47 +86,36 @@ public class TeamsConversationBot extends TeamsActivityHandler {
 
   private static final String ADAPTIVE_CARD_TEMPLATE = "UserMentionCardTemplate.json";
 
-  private static List<Object> getParams(String[] message) {
-    String action = message[0].trim().toLowerCase();
-    String resource = message[1].trim();
-    int duration = timeString2Int(defaultDuration);
-    int delay = timeString2Int(defaultDelay);
-    for (int i = 2; i < message.length - 1; i += 2) {
-      if (message[i].toLowerCase().equals("for")) {
-        duration = timeString2Int(message[i + 1].toLowerCase());
-      } else if (message[i].toLowerCase().equals("after")) {
-        delay = timeString2Int(message[i + 1].toLowerCase());
-      }
-    }
-    return Arrays.asList(action, resource, duration, delay);
-  }
-
   @Override
   protected CompletableFuture<Void> onMessageActivity(TurnContext turnContext) {
     turnContext.getActivity().removeRecipientMention();
 
     TeamsChannelAccount user = TeamsInfo.getMember(turnContext, turnContext.getActivity().getFrom().getId()).join();
-    String[] message = turnContext.getActivity().getText().trim().split(" ");
-    if (message.length == 0) {
+    String message = turnContext.getActivity().getText().trim().replaceAll(" +", " ");
+    String[] message_array = message.split(" ");
+    if (message_array.length == 0) {
       return sendMessage(turnContext, "Something went wrong.");
-    } else if (message.length == 1) {
-      return sendMessage(turnContext, "Invalid Message:\n\t" + message[0]);
+    } else if ((message_array.length != 2) && (message_array.length != 4)) {
+      return sendMessage(turnContext, "Invalid Message with " + message_array.length + " words :\n\t" + message);
     }
-    List<Object> params = getParams(message);
-    String action = (String) params.get(0);
-    String resource = (String) params.get(1);
-    int duration = (Integer) params.get(2);
-    int delay = (Integer) params.get(3);
+    String action = message_array[0].toLowerCase();
+    String resource = message_array[1];
+    int duration;
+    if (message.length() == 4) {
+      duration = timeString2Int(message_array[3].toLowerCase());
+    } else {
+      duration = timeString2Int(defaultDuration);
+    }
 
     Activity response = null;
     if (action.equals("reserve")) {
-      response = reserveResource(user, resource, duration, delay);
+      response = reserveResource(user, resource, duration);
     } else if (action.equals("release")) {
-      response = releaseResource(user, resource, delay);
+      response = releaseResource(user, resource);
     } else if (action.equals("monitor")) {
       response = monitorResource(user, resource, duration);
     } else if (action.equals("stopmonitoring")) {
-      response = stopMonitoringResource(user, resource, delay);
+      response = stopMonitoringResource(user, resource);
     } else {
       response = MessageFactory.text(
           String.format("Unsure about the action on Resource: \"%s\".\nRecieved action: \"%s\".", resource, action));
@@ -140,15 +139,10 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     // }
   }
 
-  private Activity stopMonitoringResource(TeamsChannelAccount user, String resource, int delay) {
+  private Activity stopMonitoringResource(TeamsChannelAccount user, String resource) {
     Mention mention = mentionUser(user);
     String userName = (mention != null) ? mention.getText() : user.getName();
-    String message;
-    if (delay > 0) {
-      message = String.format("%s will stop monitoring \"%s\" after %d minutes.", userName, resource, delay);
-    } else {
-      message = String.format("%s stopped monitoring \"%s\".", userName, resource);
-    }
+    String message = String.format("%s stopped monitoring \"%s\".", userName, resource);
     Activity response = MessageFactory.text(message);
     if (mention != null) {
       response.setMentions(Collections.singletonList(mention));
@@ -167,15 +161,27 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     return response;
   }
 
-  private Activity releaseResource(TeamsChannelAccount user, String resource, int delay) {
-    Mention mention = mentionUser(user);
-    String message;
-    String userName = (mention != null) ? mention.getText() : user.getName();
-    if (delay > 0) {
-      message = String.format("%s will release \"%s\" after %d minutes.", userName, resource, delay);
-    } else {
-      message = String.format("%s released \"%s\".", userName, resource);
+  private Activity releaseResource(TeamsChannelAccount user, String resource_name) {
+    Resource resource_obj;
+    try {
+      resource_obj = resourceService.find(resource_name);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return MessageFactory.text("Exception while fetching resource.");
     }
+    if (! resource_obj.isReserved()) {
+      return MessageFactory.text(String.format("Resource \"%s\" is not reserved by anyone.", resource_name));
+    }
+    String user_id = resource_obj.reservedBy;
+    if (!user_id.equals(user.getAadObjectId())) {
+      return MessageFactory.text(String.format("Resource \"%s\" is not reserved by you, you can't release it.", resource_name));
+    }
+    resource_obj.release();
+    resourceService.save(resource_obj);
+
+    Mention mention = mentionUser(user);
+    String userName = (mention != null) ? mention.getText() : user.getName();
+    String message = String.format("%s released \"%s\".", userName, resource_name);
     Activity response = MessageFactory.text(message);
     if (mention != null) {
       response.setMentions(Collections.singletonList(mention));
@@ -183,15 +189,36 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     return response;
   }
 
-  private Activity reserveResource(TeamsChannelAccount user, String resource, int duration, int delay) {
-    Mention mention = mentionUser(user);
-    String message;
-    String userName = (mention != null) ? mention.getText() : user.getName();
-    if (delay > 0) {
-      message = String.format("%s will reserve \"%s\" for %d minutes, after %d minutes.", userName, resource, duration, delay);
-    } else {
-      message = String.format("%s reserved \"%s\" for %d minutes.", userName, resource, duration);
+  private Activity reserveResource(TeamsChannelAccount user, String resource_name, int duration) {
+    Resource resource_obj;
+    try {
+      resource_obj = resourceService.find(resource_name);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return MessageFactory.text("Exception while fetching resource.");
     }
+    if (resource_obj.isReserved()) {
+      String user_id = resource_obj.reservedBy;
+      User user_obj;
+      try {
+        user_obj = userService.find(user_id);
+      } catch (Exception e) {
+        e.printStackTrace();
+        return MessageFactory.text("Exception while fetching user.");
+      }
+      return MessageFactory.text(String.format("Resource \"%s\" is already reserved by %s till %s.", resource_name, user_obj.getName(), resource_obj.reservedTill));
+    }
+    LocalDateTime reserveTill = LocalDateTime.now().plusMinutes(duration);
+    resource_obj.reserve(user.getAadObjectId(), reserveTill);
+    resourceService.save(resource_obj);
+
+    if (!userService.exisits(user.getAadObjectId())) {
+      userService.save(new User(user.getAadObjectId(), user.getName()));
+    }
+
+    Mention mention = mentionUser(user);
+    String userName = (mention != null) ? mention.getText() : user.getName();
+    String message = String.format("%s reserved \"%s\" till %d.", userName, resource_name, reserveTill);
     Activity response = MessageFactory.text(message);
     if (mention != null) {
       response.setMentions(Collections.singletonList(mention));
