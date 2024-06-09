@@ -1,2 +1,0 @@
-#!/bin/sh
-ngrok http --host-header=localhost 3978
