@@ -6,29 +6,29 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "users")
 public class User {
   @Id
-  // private String _id;
   private String id;
   private String name;
+  private String email;
+  public static String defaultEmail = "defaultEmail";
+  public static String defaultName = "defaultName";
+  public static String defaultId = "defaultID";
   public User() {
-    this("defaultID");
+    this(defaultId);
   }
   public User(String id) {
-    this(id, "defaultName");
+    this(id, defaultName, defaultEmail);
   }
-  public User(String id, String name) {
+  public User(String id, String name, String email) {
     this.id = id;
     this.name = name;
+    this.email = email;
   }
   public String getId() {
     return id;
   }
-  public String getName() {
-    return name;
-  }
-  public void setName(String name) {
-    this.name = name;
-  }
-  public String toString() {
-    return String.format("%s (%s)", name, id);
-  }
+  public String getName() { return name; }
+  public String getEmail() { return email; }
+  public void setName(String name) { this.name = name; }
+  public void setEmail(String email) { this.email = email; }
+  public String toString() { return String.format("%s (%s)", name, id); }
 }

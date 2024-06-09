@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.sprinklr.msTeams.mutexBot.model.Resource;
 import com.sprinklr.msTeams.mutexBot.model.User;
 import com.sprinklr.msTeams.mutexBot.repositories.UserRepository;
 
@@ -32,7 +31,7 @@ public class UserService {
     return user.get();
   }
 
-  public boolean exisits(String id) {
+  public boolean exists(String id) {
     return repo.existsById(id);
   }
 

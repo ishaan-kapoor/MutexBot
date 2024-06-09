@@ -18,7 +18,7 @@ public class Resource {
   private boolean reserved;
   public String reservedBy;
   public LocalDateTime reservedTill;
-  private List<UserTimeEntry> monitoredBy;
+  public List<UserTimeEntry> monitoredBy;
 
   public Resource(String name) {
     this.name = name;
@@ -96,6 +96,7 @@ public class Resource {
 
   public boolean isReserved() {
     // System.out.println("res called");
+    // System.out.println(reserved);
     if (!reserved) { return false; }
     if (reservedTill == null) { return false; }
     if (reservedTill.isBefore(LocalDateTime.now())) { reserved = false; }
