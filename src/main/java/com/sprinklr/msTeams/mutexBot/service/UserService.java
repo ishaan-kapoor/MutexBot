@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.microsoft.bot.schema.ChannelAccount;
+import com.microsoft.bot.schema.teams.TeamsChannelAccount;
 import com.sprinklr.msTeams.mutexBot.model.User;
 import com.sprinklr.msTeams.mutexBot.repositories.UserRepository;
 
@@ -31,8 +33,24 @@ public class UserService {
     return user.get();
   }
 
+  public boolean exists(ChannelAccount user) {
+    return exists(user.getId());
+  }
+
   public boolean exists(String id) {
-    return repo.existsById(id);
+    // if (id.equals(User.defaultId)) { return false; }
+    if (!repo.existsById(id)) { return false; }
+    User user;
+    try {
+      user = find(id);
+    } catch (Exception e) {
+      System.out.println("Error while finding user: " + e.getMessage());
+      e.printStackTrace();
+      return false;
+    }
+    if (user.getEmail().equals(User.defaultEmail)) { return false; }
+    if (user.getName().equals(User.defaultName)) { return false; }
+    return true;
   }
 
   public void save(User user) {

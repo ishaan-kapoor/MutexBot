@@ -3,6 +3,9 @@ package com.sprinklr.msTeams.mutexBot.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.microsoft.bot.schema.ChannelAccount;
+import com.microsoft.bot.schema.teams.TeamsChannelAccount;
+
 @Document(collection = "users")
 public class User {
   @Id
@@ -17,6 +20,16 @@ public class User {
   }
   public User(String id) {
     this(id, defaultName, defaultEmail);
+  }
+  public User(ChannelAccount user) {
+    this.id = user.getId();
+    this.name = user.getName();
+    this.email = defaultEmail;
+  }
+  public User(TeamsChannelAccount user) {
+    this.id = user.getId();
+    this.name = user.getName();
+    this.email = user.getEmail();
   }
   public User(String id, String name, String email) {
     this.id = id;

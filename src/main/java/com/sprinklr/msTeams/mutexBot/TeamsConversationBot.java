@@ -65,6 +65,7 @@ public class TeamsConversationBot extends TeamsActivityHandler {
   private UserService userService;
   private static String defaultDuration = "1h";
   private static DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss (dd/MM/yyyy)");
+  private static String helpMessage = "Commands:<br> &emsp;Reserve \\<Resource\\> [for \\<Duration\\>]<br> &emsp;Release \\<Resource\\><br> &emsp;Status \\<Resource\\><br> &emsp;Monitor \\<Resource\\> [for \\<Duration\\>]<br> &emsp;StopMonitoring \\<Resource\\><br>Where \\<Duration\\> is in the form of \\<hours\\>h\\<minutes\\>m, and default duration is for 1 hour.\ne.g.<br> &emsp;Reserve prod:qa6 for 12m<br> &emsp;StopMonitoring dev:qa6";
 
   private static String time2link(LocalDateTime time) {
     return String.format("https://www.timeanddate.com/worldclock/fixedtime.html?day=%d&month=%d&year=%d&hour=%d&min=%d&sec=%d", time.getDayOfMonth(), time.getMonthValue(), time.getYear(), time.getHour(), time.getMinute(), time.getSecond());
@@ -108,19 +109,21 @@ public class TeamsConversationBot extends TeamsActivityHandler {
   @Override
   protected CompletableFuture<Void> onMessageActivity(TurnContext turnContext) {
     turnContext.getActivity().removeRecipientMention();
-    // return sendPersonalMessage("29:1zzGRJsh3ZUh7Sxfqf6ptNTxHdgObN_sDBYwcrcH8iSU_od4E8ogTY8JsDj7PvBMTYMdSa_fyb1GIaQD4Nka0BA", "did you actually recieve this?", turnContext);
-    // return sendPersonalMessage("29:1hPlNf--Dnx8xd0qoVvjMiepeJzk5yL9oI8U0F2L2Mdwnp24uqk1eMdQ-w4W9iiP6EZBNmVgHihvc5OlnLkEnMA", "did you actually recieve this?", turnContext);
 
     TeamsChannelAccount user = TeamsInfo.getMember(turnContext, turnContext.getActivity().getFrom().getId()).join();
+    if (!userService.exists(user)) { userService.save(new User(user)); }
+
     String message = turnContext.getActivity().getText().trim().replaceAll(" +", " ");
     String[] message_array = message.split(" ");
     if (message_array.length == 0) {
       return sendMessage(turnContext, "Something went wrong.");
+    } else if ( (message_array.length == 1) && (message.toLowerCase().equals("help")) ) {
+      return sendMessage(turnContext, helpMessage);
     } else if ((message_array.length != 2) && (message_array.length != 4)) {
       return sendMessage(turnContext, "Invalid Message with " + message_array.length + " words :\n\t" + message);
     }
     String action = message_array[0].toLowerCase();
-    String resource = message_array[1];
+    String resource_name = message_array[1];
     int duration;
     if (message_array.length == 4) {
       duration = timeString2Int(message_array[3].toLowerCase());
@@ -129,6 +132,14 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     }
     if (duration <= 0) {
       return sendMessage(turnContext, MessageFactory.text("Duration can't be -ve or zero"));
+    }
+
+    Resource resource;
+    try {
+      resource = resourceService.find(resource_name);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return sendMessage(turnContext, "Exception while fetching resource.");
     }
 
     Activity response = null;
@@ -140,9 +151,11 @@ public class TeamsConversationBot extends TeamsActivityHandler {
       response = monitorResource(user, resource, duration);
     } else if (action.equals("stopmonitoring")) {
       response = stopMonitoringResource(user, resource);
+    } else if (action.equals("status")) {
+      response = getStatus(resource);
     } else {
       response = MessageFactory.text(
-          String.format("Unsure about the action on Resource: \"%s\".\nRecieved action: \"%s\".", resource, action));
+          String.format("Unsure about the action on Resource: \"%s\".\nRecieved action: \"%s\".", resource_name, action));
     }
     return sendMessage(turnContext, response);
 
@@ -163,136 +176,99 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     // }
   }
 
-  private Activity stopMonitoringResource(TeamsChannelAccount user, String resource_name) {
-    Resource resource_obj;
-    try {
-      resource_obj = resourceService.find(resource_name);
-    } catch (Exception e) {
-      e.printStackTrace();
-      return MessageFactory.text("Exception while fetching resource.");
-    }
-    resource_obj.stopMonitoring(user.getId());
-    resourceService.save(resource_obj);
+  private Activity stopMonitoringResource(TeamsChannelAccount user, Resource resource) {
+    resource.stopMonitoring(user.getId());
+    resourceService.save(resource);
 
-    Mention mention = mentionUser(user);
-    String userName = (mention != null) ? mention.getText() : user.getName();
-    String message = String.format("%s stopped monitoring \"%s\".", userName, resource_name);
-    Activity response = MessageFactory.text(message);
-    if (mention != null) {
-      response.setMentions(Collections.singletonList(mention));
-    }
-    return response;
+    String message = String.format(" stopped monitoring \"%s\".", resource.getName());
+    return makeMentionedResponse(user, message);
   }
 
-  private Activity monitorResource(TeamsChannelAccount user, String resource_name, int duration) {
-    Resource resource_obj;
-    try {
-      resource_obj = resourceService.find(resource_name);
-    } catch (Exception e) {
-      e.printStackTrace();
-      return MessageFactory.text("Exception while fetching resource.");
-    }
-
+  private Activity monitorResource(TeamsChannelAccount user, Resource resource, int duration) {
     LocalDateTime monitorTill = LocalDateTime.now().plusMinutes(duration);
-    resource_obj.monitor(user.getId(), monitorTill);
-    resourceService.save(resource_obj);
+    resource.monitor(user.getId(), monitorTill);
+    resourceService.save(resource);
 
-    if (!userService.exists(user.getId())) {
-      userService.save(new User(user.getId(), user.getName(), user.getEmail()));
-    }
-
-    Mention mention = mentionUser(user);
-    String userName = (mention != null) ? mention.getText() : user.getName();
-    String message = String.format("%s is monitoring \"%s\" till %s.", userName, resource_name, time2hyperlink(monitorTill));
-    Activity response = MessageFactory.text(message);
-    if (mention != null) { response.setMentions(Collections.singletonList(mention)); }
-    return response;
+    String message = String.format(" is monitoring \"%s\" till %s.", resource.getName(), time2hyperlink(monitorTill));
+    return makeMentionedResponse(user, message);
   }
 
-  private Activity releaseResource(TeamsChannelAccount user, TurnContext turnContext, String resource_name) {
-    Resource resource_obj;
-    try {
-      resource_obj = resourceService.find(resource_name);
-    } catch (Exception e) {
-      e.printStackTrace();
-      return MessageFactory.text("Exception while fetching resource.");
+  private Activity releaseResource(TeamsChannelAccount user, TurnContext turnContext, Resource resource) {
+    if (!resource.isReserved()) {
+      return MessageFactory.text(String.format("Resource \"%s\" is not reserved by anyone.", resource.getName()));
     }
-    if (!resource_obj.isReserved()) {
-      return MessageFactory.text(String.format("Resource \"%s\" is not reserved by anyone.", resource_name));
-    }
-    String user_id = resource_obj.reservedBy;
-    if (!user_id.equals(user.getId())) {
-      User user_obj;
+
+    String reservingUserId = resource.reservedBy;
+    if (! user.getId().equals(reservingUserId)) {
+      User reservingUser;
       try {
-        user_obj = userService.find(user_id);
+        reservingUser = userService.find(reservingUserId);
       } catch (Exception e) {
         System.out.println("Error while fetching monitoring user");
         e.printStackTrace();
-        user_obj = new User(user_id);
+        reservingUser = new User(reservingUserId);
       }
-      return MessageFactory.text(String.format("Resource \"%s\" is reserved by %s", resource_name, user2hyperlink(user_obj, resource_name)));
-    }
-    resource_obj.release();
-    resource_obj.clean_monitor_list();
-    resourceService.save(resource_obj);
-
-    String message = String.format(" released \"%s\".", resource_name);
-
-    for (UserTimeEntry entry: resource_obj.monitoredBy) {
-      sendPersonalMessage(entry.user, user2hyperlink(user, resource_name) + message, turnContext).join();
+      return MessageFactory.text(String.format("Resource \"%s\" is reserved by %s", resource.getName(), user2hyperlink(reservingUser, resource.getName())));
     }
 
+    resource.release();
+    resource.clean_monitor_list();
+    resourceService.save(resource);
 
-    Mention mention = mentionUser(user);
-    String userName = (mention != null) ? mention.getText() : user.getName();
-    Activity response = MessageFactory.text(userName + message);
-    if (mention != null) {
-      response.setMentions(Collections.singletonList(mention));
+    String message = String.format(" released \"%s\".", resource.getName());
+
+    for (UserTimeEntry entry: resource.monitoredBy) {
+      sendPersonalMessage(entry.user, user2hyperlink(user, resource.getName()) + message, turnContext).join();
     }
-    return response;
+
+    return makeMentionedResponse(user, message);
   }
 
-  private Activity reserveResource(TeamsChannelAccount user, TurnContext turnContext, String resource_name, int duration) {
-    Resource resource_obj;
-    try {
-      resource_obj = resourceService.find(resource_name);
-    } catch (Exception e) {
-      e.printStackTrace();
-      return MessageFactory.text("Exception while fetching resource.");
-    }
-    if (resource_obj.isReserved()) {
-      String user_id = resource_obj.reservedBy;
-      User user_obj;
+  private Activity reserveResource(TeamsChannelAccount user, TurnContext turnContext, Resource resource, int duration) {
+    if (resource.isReserved()) {
+      User reservingUser;
       try {
-        user_obj = userService.find(user_id);
+        reservingUser = userService.find(resource.reservedBy);
       } catch (Exception e) {
         e.printStackTrace();
         return MessageFactory.text("Exception while fetching user.");
       }
-      return MessageFactory.text(String.format("Resource \"%s\" is already reserved by %s till %s.", resource_name, user2hyperlink(user_obj, resource_name), time2hyperlink(resource_obj.reservedTill)));
+      return MessageFactory.text(String.format("Resource \"%s\" is already reserved by %s till %s.", resource.getName(), user2hyperlink(reservingUser, resource.getName()), time2hyperlink(resource.reservedTill)));
     }
+
     LocalDateTime reserveTill = LocalDateTime.now().plusMinutes(duration);
-    resource_obj.reserve(user.getId(), reserveTill);
-    resource_obj.clean_monitor_list();
-    resourceService.save(resource_obj);
+    resource.reserve(user.getId(), reserveTill);
+    resource.clean_monitor_list();
+    resourceService.save(resource);
 
-    if (!userService.exists(user.getId())) {
-      userService.save(new User(user.getId(), user.getName(), user.getEmail()));
+    String message = String.format(" reserved \"%s\" till %s.", resource.getName(), time2hyperlink(reserveTill));
+
+    for (UserTimeEntry entry: resource.monitoredBy) {
+      sendPersonalMessage(entry.user, user2hyperlink(user, resource.getName()) + message, turnContext).join();
     }
 
-    String message = String.format(" reserved \"%s\" till %s.", resource_name, time2hyperlink(reserveTill));
+    return makeMentionedResponse(user, message);
+  }
 
-    for (UserTimeEntry entry: resource_obj.monitoredBy) {
-      sendPersonalMessage(entry.user, user2hyperlink(user, resource_name) + message, turnContext).join();
+  private Activity getStatus(Resource resource) {
+    String response;
+
+    if (! resource.isReserved()) {
+      response = String.format("Resource \"%s\" is not reserved by anyone.", resource.getName());
     }
 
-    Mention mention = mentionUser(user);
-    String userName = (mention != null) ? mention.getText() : user.getName();
-    Activity response = MessageFactory.text(userName + message);
-    if (mention != null) {
-      response.setMentions(Collections.singletonList(mention));
+    else {
+      User reservingUser;
+      try {
+        reservingUser = userService.find(resource.reservedBy);
+      } catch (Exception e) {
+        e.printStackTrace();
+        return MessageFactory.text("Exception while fetching user.");
+      }
+      response = String.format("Resource \"%s\" is reserved by %s till %s.", resource.getName(), user2hyperlink(reservingUser, resource.getName()), time2hyperlink(resource.reservedTill));
     }
-    return response;
+
+    return MessageFactory.text(response);
   }
 
   private CompletableFuture<Void> sendMessage(TurnContext turnContext, String message) {
@@ -301,6 +277,16 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     }
     Activity replyActivity = MessageFactory.text(message);
     return sendMessage(turnContext, replyActivity);
+  }
+
+  private Activity makeMentionedResponse(TeamsChannelAccount user, String message) {
+    Mention mention = mentionUser(user);
+    String userName = (mention != null) ? mention.getText() : user.getName();
+    Activity response = MessageFactory.text(userName + message);
+    if (mention != null) {
+      response.setMentions(Collections.singletonList(mention));
+    }
+    return response;
   }
 
   private Mention mentionUser(ChannelAccount user) {
@@ -350,15 +336,27 @@ public class TeamsConversationBot extends TeamsActivityHandler {
       List<TeamsChannelAccount> membersAdded,
       TeamInfo teamInfo,
       TurnContext turnContext) {
-    return membersAdded.stream()
-        .filter(
-            member -> !StringUtils
-                .equals(member.getId(), turnContext.getActivity().getRecipient().getId()))
-        .map(
-            channel -> turnContext.sendActivity(MessageFactory
-                .text("Welcome to the team " + channel.getGivenName() + " " + channel.getSurname() + ".")))
-        .collect(CompletableFutures.toFutureList())
-        .thenApply(resourceResponses -> null);
+    for (TeamsChannelAccount user: membersAdded) {
+      if (user.getId().equals(turnContext.getActivity().getRecipient().getId())) {
+        continue;
+      }
+      try {
+        if (!userService.exists(user)) { userService.save(new User(user)); }
+      } catch (Exception e) {
+        e.printStackTrace();
+        System.out.println("Error while saving user");
+      }
+    }
+    return sendMessage(turnContext, "Welcome!\nType Help for Help page.");
+    // return membersAdded.stream()
+    //     .filter(
+    //         member -> !StringUtils
+    //             .equals(member.getId(), turnContext.getActivity().getRecipient().getId()))
+    //     .map(
+    //         channel -> turnContext.sendActivity(MessageFactory
+    //             .text("Welcome to the team " + channel.getGivenName() + " " + channel.getSurname() + ".")))
+    //     .collect(CompletableFutures.toFutureList())
+    //     .thenApply(resourceResponses -> null);
   }
 
   private CompletableFuture<Void> cardActivity(TurnContext turnContext, Boolean update) {
