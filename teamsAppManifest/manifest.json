@@ -50,8 +50,8 @@
               "description": "Specify the duration of the action."
             },
             {
-              "title": "after",
-              "description": "Specify the delay before the given action is performed."
+              "title": "Status",
+              "description": "Get the status of the resource."
             },
             {
               "title": "StopMonitoring",
