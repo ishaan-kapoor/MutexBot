@@ -122,13 +122,13 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     String action = message_array[0].toLowerCase();
     String resource = message_array[1];
     int duration;
-    if (message.length() == 4) {
+    if (message_array.length == 4) {
       duration = timeString2Int(message_array[3].toLowerCase());
     } else {
       duration = timeString2Int(defaultDuration);
     }
-    if (duration < 0) {
-      return sendMessage(turnContext, MessageFactory.text("Duration can't be -ve"));
+    if (duration <= 0) {
+      return sendMessage(turnContext, MessageFactory.text("Duration can't be -ve or zero"));
     }
 
     Activity response = null;
