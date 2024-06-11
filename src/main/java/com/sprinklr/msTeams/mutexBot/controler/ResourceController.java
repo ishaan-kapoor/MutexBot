@@ -9,20 +9,20 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sprinklr.msTeams.mutexBot.model.Resource;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 
-@RestController
-public class ResourceController {
-  @Autowired
-  private ResourceService service;
+// @RestController
+// public class ResourceController {
+//   @Autowired
+//   private ResourceService service;
 
-  @GetMapping("/resources")
-  public void get() {
-    System.out.println("getting");
-    List<Resource> all = service.getAll();
-    // System.out.println(all);
-    for (Resource u: all) {
-      System.out.println(u.toString());
-    }
-    System.out.println("got");
+  // @GetMapping("/resources")
+  // public void get() {
+    // System.out.println("getting");
+    // List<Resource> all = service.getAll();
+    // // System.out.println(all);
+    // for (Resource u: all) {
+    //   System.out.println(u.toString());
+    // }
+    // System.out.println("got");
     // Resource got;
     // try {
     //   got = service.find("naam");
@@ -43,6 +43,6 @@ public class ResourceController {
     //   System.out.println(u);
     // }
     // System.out.println("got");
-  }
-}
+//   }
+// }
 

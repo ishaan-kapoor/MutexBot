@@ -1,0 +1,32 @@
+{
+  "type": "AdaptiveCard",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Please select the resource (Start typing to filter):"
+    },
+    {
+      "type": "Input.ChoiceSet",
+      "id": "resource",
+      "style": "filtered",
+      "choices": [
+        {}
+      ]
+    },
+    {
+      "type": "Input.Text",
+      "value": "resourceCard",
+      "id": "card",
+      "isVisible": false
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Submit"
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.3"
+}
+

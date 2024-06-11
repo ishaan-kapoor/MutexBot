@@ -1,0 +1,27 @@
+{
+  "type": "AdaptiveCard",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Please select a date and time for the action:"
+    },
+    {
+      "type": "Input.Date",
+      "id": "selectedDate",
+      "placeholder": "Select a date"
+    },
+    {
+      "type": "Input.Time",
+      "id": "selectedTime",
+      "placeholder": "Select a time"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Submit"
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.3"
+}

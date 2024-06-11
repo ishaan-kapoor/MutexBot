@@ -1,7 +1,10 @@
 package com.sprinklr.msTeams.mutexBot;
 
 import com.codepoetics.protonpack.collectors.CompletableFutures;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.bot.builder.BotFrameworkAdapter;
+import com.microsoft.bot.builder.InvokeResponse;
 import com.microsoft.bot.builder.MessageFactory;
 import com.microsoft.bot.builder.TurnContext;
 import com.microsoft.bot.builder.teams.TeamsActivityHandler;
@@ -12,6 +15,7 @@ import com.microsoft.bot.connector.rest.ErrorResponseException;
 import com.microsoft.bot.integration.Configuration;
 import com.microsoft.bot.schema.ActionTypes;
 import com.microsoft.bot.schema.Activity;
+import com.microsoft.bot.schema.ActivityTypes;
 import com.microsoft.bot.schema.Attachment;
 import com.microsoft.bot.schema.CardAction;
 import com.microsoft.bot.schema.ChannelAccount;
@@ -29,6 +33,7 @@ import com.sprinklr.msTeams.mutexBot.service.UserService;
 import com.sprinklr.msTeams.mutexBot.utils.UserTimeEntry;
 
 import org.apache.commons.lang3.StringUtils;
+import org.bson.codecs.pojo.PropertyAccessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.apache.commons.io.IOUtils;
 
@@ -41,6 +46,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -64,6 +70,7 @@ public class TeamsConversationBot extends TeamsActivityHandler {
   @Autowired
   private UserService userService;
   private static String defaultDuration = "1h";
+  private static final String[] adminActions = {"create", "delete", "makeAdmin"};
   private static DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss (dd/MM/yyyy)");
   private static String helpMessage = "Commands:<br> &emsp;Reserve \\<Resource\\> [for \\<Duration\\>]<br> &emsp;Release \\<Resource\\><br> &emsp;Status \\<Resource\\><br> &emsp;Monitor \\<Resource\\> [for \\<Duration\\>]<br> &emsp;StopMonitoring \\<Resource\\><br>Where \\<Duration\\> is in the form of \\<hours\\>h\\<minutes\\>m, and default duration is for 1 hour.\ne.g.<br> &emsp;Reserve prod:qa6 for 12m<br> &emsp;StopMonitoring dev:qa6";
 
@@ -81,7 +88,6 @@ public class TeamsConversationBot extends TeamsActivityHandler {
 
   private static String user2hyperlink(TeamsChannelAccount user, String resource) {
     return String.format("[%s](mailto:%s?subject=Regarding%%20reservation%%20of%%20Jenkins%%20resource%%20\"%s\")", user.getName(), user.getEmail(), resource);
-    // return String.format("[%s](mailto:%s?subject=Regarding reservation of Jenkins resource \"%s\"", user.getName(), user.getEmail(), resource);
   }
 
   private static int timeString2Int(String time) {
@@ -105,33 +111,108 @@ public class TeamsConversationBot extends TeamsActivityHandler {
   }
 
   private static final String ADAPTIVE_CARD_TEMPLATE = "UserMentionCardTemplate.json";
+  private static final String DATE_TIME_ADAPTIVE_CARD_TEMPLATE = "/datetime.json";
+  private static final String DURATION_ADAPTIVE_CARD_TEMPLATE = "/duration.json";
+  private static final String DROPDOWN_ADAPTIVE_CARD_TEMPLATE = "/dropdown.json";
+  private static final String UNSURE_ACTION_MESSAGE = "Unsure about the action on Resource: \"%s\".\nRecieved action: \"%s\".";
 
-  @Override
-  protected CompletableFuture<Void> onMessageActivity(TurnContext turnContext) {
-    turnContext.getActivity().removeRecipientMention();
+  private CompletableFuture<Void> resourceSelection(TurnContext turnContext) {
+    List<Resource> resources = resourceService.getAll();
+    // List<CardAction> buttons = new ArrayList<>();
+    // for (Resource resource: resources) {
+    //   CardAction cardAction = new CardAction();
+    //   cardAction.setType(ActionTypes.MESSAGE_BACK);
+    //   cardAction.setTitle(resource.getName());
+    //   cardAction.setText("* " + resource.getName());
+    //   buttons.add(cardAction);
+    // }
+    // HeroCard card = new HeroCard();
+    // card.setButtons(buttons);
+    // card.setTitle("Choose the resource to perform action on.");
+    // return sendMessage(turnContext, MessageFactory.attachment(card.toAttachment()));
 
-    TeamsChannelAccount user = TeamsInfo.getMember(turnContext, turnContext.getActivity().getFrom().getId()).join();
-    if (!userService.exists(user)) { userService.save(new User(user)); }
+    JsonNode content;
+    try(InputStream inputStream = getClass().getResourceAsStream(DROPDOWN_ADAPTIVE_CARD_TEMPLATE)) {
+      if (inputStream == null) {
+        return sendMessage(turnContext, "Error while loading adaptive card.<br>(CODE: json file for card not found)");
+      }
+      String templateJSON = IOUtils.toString(inputStream, StandardCharsets.UTF_8.toString());
 
-    String message = turnContext.getActivity().getText().trim().replaceAll(" +", " ");
-    String[] message_array = message.split(" ");
-    if (message_array.length == 0) {
-      return sendMessage(turnContext, "Something went wrong.");
-    } else if ( (message_array.length == 1) && (message.toLowerCase().equals("help")) ) {
-      return sendMessage(turnContext, helpMessage);
-    } else if ((message_array.length != 2) && (message_array.length != 4)) {
-      return sendMessage(turnContext, "Invalid Message with " + message_array.length + " words :\n\t" + message);
+      StringBuilder choicesBuilder = new StringBuilder();
+      for (Resource resource : resources) {
+        if (choicesBuilder.length() > 0) {
+          choicesBuilder.append(", ");
+        }
+        choicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", resource.getName(), resource.getName()));
+      }
+      String cardJSON = templateJSON.replace("{}", choicesBuilder.toString());
+      content = Serialization.jsonToTree(cardJSON);
+    } catch (IOException e) {
+      e.printStackTrace();
+      return sendMessage(turnContext, "Error while loading adaptive card.<br>"+e);
     }
-    String action = message_array[0].toLowerCase();
-    String resource_name = message_array[1];
-    int duration;
-    if (message_array.length == 4) {
-      duration = timeString2Int(message_array[3].toLowerCase());
-    } else {
-      duration = timeString2Int(defaultDuration);
+
+    Attachment adaptiveCardAttachment = new Attachment();
+    adaptiveCardAttachment.setContentType("application/vnd.microsoft.card.adaptive");
+    adaptiveCardAttachment.setContent(content);
+    return sendMessage(turnContext, MessageFactory.attachment(adaptiveCardAttachment));
+  }
+
+  private CompletableFuture<Void> durationSelection(TurnContext turnContext, String resource, String action) {
+    JsonNode content;
+    try(InputStream inputStream = getClass().getResourceAsStream(DURATION_ADAPTIVE_CARD_TEMPLATE)) {
+      if (inputStream == null) {
+        return sendMessage(turnContext, "Error while loading adaptive card.<br>(CODE: json file for card not found)");
+      }
+      String templateJSON = IOUtils.toString(inputStream, StandardCharsets.UTF_8.toString());
+      String cardJSON = templateJSON.replaceAll("\\$\\{resource\\}", resource).replaceAll("\\$\\{action\\}", action);
+      content = Serialization.jsonToTree(cardJSON);
+    } catch (IOException e) {
+      e.printStackTrace();
+      return sendMessage(turnContext, "Error while loading adaptive card.<br>"+e);
     }
-    if (duration <= 0) {
-      return sendMessage(turnContext, MessageFactory.text("Duration can't be -ve or zero"));
+
+    Attachment adaptiveCardAttachment = new Attachment();
+    adaptiveCardAttachment.setContentType("application/vnd.microsoft.card.adaptive");
+    adaptiveCardAttachment.setContent(content);
+    return sendMessage(turnContext, MessageFactory.attachment(adaptiveCardAttachment));
+  }
+
+  private CompletableFuture<Void> actionSelection(TurnContext turnContext, String resource) {
+    String[] actions = {"Reserve", "Release", "Status", "Monitor", "StopMonitoring"};
+    List<CardAction> buttons = new ArrayList<>();
+    for (String action: actions) {
+      CardAction cardAction = new CardAction();
+      cardAction.setType(ActionTypes.MESSAGE_BACK);
+      cardAction.setTitle(action);
+      cardAction.setText(action + " " + resource);
+      buttons.add(cardAction);
+    }
+    HeroCard card = new HeroCard();
+    card.setButtons(buttons);
+    card.setTitle("Choose the action to perform on \"" + resource + "\".");
+    return sendMessage(turnContext, MessageFactory.attachment(card.toAttachment()));
+  }
+
+  protected CompletableFuture<Void> actOnResource(TurnContext turnContext, String resource_name) {
+    Resource resource;
+    try {
+      resource = resourceService.find(resource_name);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return sendMessage(turnContext, "Exception while fetching resource.");
+    }
+    if (resource == null) {
+      return sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+    }
+    return actOnResource(turnContext, resource_name, "*");
+  }
+
+  protected CompletableFuture<Void> actOnResource(TurnContext turnContext, String resource_name, String action) {
+    for (String act: adminActions) {
+      if (act.equals(action)) {
+        return adminAction(turnContext, resource_name, action);
+      }
     }
 
     Resource resource;
@@ -141,23 +222,147 @@ public class TeamsConversationBot extends TeamsActivityHandler {
       e.printStackTrace();
       return sendMessage(turnContext, "Exception while fetching resource.");
     }
+    if (resource == null) {
+      return sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+    }
 
-    Activity response = null;
-    if (action.equals("reserve")) {
-      response = reserveResource(user, turnContext, resource, duration);
-    } else if (action.equals("release")) {
+    if (action.equals("*")) {
+      return actionSelection(turnContext, resource_name);
+    } else if ((action.equals("reserve")) || action.equals("monitor")) {
+      return durationSelection(turnContext, resource_name, action);
+    }
+
+    TeamsChannelAccount user = TeamsInfo.getMember(turnContext, turnContext.getActivity().getFrom().getId()).join();
+    if (!userService.exists(user)) { userService.save(new User(user)); }
+
+    Activity response;
+    if (action.equals("release")) {
       response = releaseResource(user, turnContext, resource);
-    } else if (action.equals("monitor")) {
-      response = monitorResource(user, resource, duration);
     } else if (action.equals("stopmonitoring")) {
       response = stopMonitoringResource(user, resource);
     } else if (action.equals("status")) {
       response = getStatus(resource);
     } else {
-      response = MessageFactory.text(
-          String.format("Unsure about the action on Resource: \"%s\".\nRecieved action: \"%s\".", resource_name, action));
+      response = MessageFactory.text(String.format(UNSURE_ACTION_MESSAGE, resource_name, action));
     }
     return sendMessage(turnContext, response);
+  }
+
+  protected CompletableFuture<Void> adminAction(TurnContext turnContext, String resource_name, String action) {
+    String user_id = turnContext.getActivity().getFrom().getId();
+    TeamsChannelAccount teamsUser = TeamsInfo.getMember(turnContext, user_id).join();
+    User user;
+    try {
+      user = userService.find(user_id);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return sendMessage(turnContext, "Exception while fetching user.");
+    }
+    if ((user == null)) {
+      userService.save(new User(teamsUser));
+      return sendMessage(turnContext, "Only admins can create/delete resources");
+    }
+    if (!userService.exists(user_id)) { userService.save(new User(teamsUser)); }
+    if (!user.isAdmin()) {
+      return sendMessage(turnContext, "Only admins can create/delete resources");
+    }
+
+    boolean exists = resourceService.exists(resource_name);
+    if (action.equals("create")) {
+      if (exists) {
+        return sendMessage(turnContext, "Resource \"" + resource_name + "\" already exists.");
+      }
+      resourceService.save(new Resource(resource_name));
+      return sendMessage(turnContext, "Resource \"" + resource_name + "\" created successfully.");
+    } else if (action.equals("delete")) {
+      if (!exists) {
+        return sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+      }
+      resourceService.delete(resource_name);
+      return sendMessage(turnContext, "Resource \"" + resource_name + "\" deleted successfully.");
+    } else {
+      return sendMessage(turnContext, "Invalid admin action: "+action);
+    }
+  }
+
+  protected CompletableFuture<Void> actOnResource(TurnContext turnContext, String resource_name, String action, Integer duration) {
+    Resource resource;
+    try {
+      resource = resourceService.find(resource_name);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return sendMessage(turnContext, "Exception while fetching resource.");
+    }
+    if (resource == null) {
+      return sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+    }
+
+    TeamsChannelAccount user = TeamsInfo.getMember(turnContext, turnContext.getActivity().getFrom().getId()).join();
+    if (!userService.exists(user)) { userService.save(new User(user)); }
+
+    if (duration <= 0) {
+      return sendMessage(turnContext, MessageFactory.text("Duration can't be -ve or zero"));
+    }
+
+    Activity response;
+    if (action.equals("reserve")) {
+      response = reserveResource(user, turnContext, resource, duration);
+    } else if (action.equals("monitor")) {
+      response = monitorResource(user, resource, duration);
+    } else {
+      response = MessageFactory.text(String.format(UNSURE_ACTION_MESSAGE, resource_name, action));
+    }
+    return sendMessage(turnContext, response);
+  }
+
+  @Override
+  protected CompletableFuture<Void> onMessageActivity(TurnContext turnContext) {
+    turnContext.getActivity().removeRecipientMention();
+
+    System.out.println("\n"+turnContext.getActivity().getLocalTimezone()+"\n");
+    if (turnContext.getActivity().getText() == null) {
+      Map<String, Object> data = (Map<String, Object>) turnContext.getActivity().getValue();
+      String card = (String) data.get("card");
+      // Check if the activity is from the specific Adaptive Card
+      if (card == null) {
+        return sendMessage(turnContext, "No message recieved.");
+      }
+      if (card.equals("durationCard")) {
+        Integer hours = Integer.parseInt((String) data.get("hours"));
+        Integer minutes = Integer.parseInt((String) data.get("minutes"));
+        String resource = (String) data.get("resource");
+        String action = (String) data.get("action");
+
+        if (hours != null && minutes != null && resource != null && action != null) {
+          return actOnResource(turnContext, resource, action, hours*60+minutes);
+        } else {
+          return sendMessage(turnContext, "Please enter valid values.");
+        }
+      } else if (card.equals("resourceCard")) {
+        String resource = (String) data.get("resource");
+        if (resource == null) {
+          return sendMessage(turnContext, "Please enter a valid resource name.");
+        }
+        return actOnResource(turnContext, resource);
+      }
+      return sendMessage(turnContext, "No message recieved.");
+    }
+
+    String message = turnContext.getActivity().getText().trim().replaceAll(" +", " ");
+    String[] message_array = message.split(" ");
+    if (message_array.length == 0) {
+      return sendMessage(turnContext, "Something went wrong.");
+    } else if ( (message_array.length == 1) && (message.toLowerCase().equals("help")) ) {
+      return sendMessage(turnContext, helpMessage);
+    } else if ( (message_array.length == 1) && (message.toLowerCase().equals("act")) ) {
+      return resourceSelection(turnContext);
+    } else if (message_array.length == 2) {
+      return actOnResource(turnContext, message_array[1], message_array[0].toLowerCase());
+    } else if (message_array.length == 4) {
+      return actOnResource(turnContext, message_array[1], message_array[0].toLowerCase(), timeString2Int(message_array[3].toLowerCase()));
+    }
+    sendMessage(turnContext, "Invalid message recieved.<br>"+message);
+    return resourceSelection(turnContext);
 
     // if (text.contains("mention me")) {
     // return mentionAdaptiveCardActivityAsync(turnContext);
@@ -359,6 +564,12 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     //     .thenApply(resourceResponses -> null);
   }
 
+
+  protected CompletableFuture<InvokeResponse> onTeamsCardActionInvoke(TurnContext turnContext) {
+    System.out.println("\nKisne invoke kia\n");
+    return notImplemented();
+  }
+
   private CompletableFuture<Void> cardActivity(TurnContext turnContext, Boolean update) {
     CardAction allMembersAction = new CardAction();
     allMembersAction.setType(ActionTypes.MESSAGE_BACK);
@@ -380,12 +591,18 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     deleteAction.setTitle("Delete card");
     deleteAction.setText("Delete");
 
+    CardAction demo = new CardAction();
+    demo.setType(ActionTypes.INVOKE);
+    demo.setTitle("invoke");
+    demo.setText("INVOKKE");
+
     HeroCard card = new HeroCard();
     List<CardAction> buttons = new ArrayList<>();
     buttons.add(allMembersAction);
     buttons.add(mentionAction);
     buttons.add(mentionMeAction);
     buttons.add(deleteAction);
+    buttons.add(demo);
     card.setButtons(buttons);
 
     if (update) {

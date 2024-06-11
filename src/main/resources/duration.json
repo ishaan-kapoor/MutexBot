@@ -1,0 +1,52 @@
+{
+  "type": "AdaptiveCard",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "How long do you wish to ${action} ${resource} for (in Hours and Minutes): "
+    },
+    {
+      "type": "Input.Number",
+      "id": "hours",
+      "placeholder": "Enter hours",
+      "min": 0,
+      "max": 23
+    },
+    {
+      "type": "Input.Number",
+      "id": "minutes",
+      "placeholder": "Enter minutes",
+      "min": 0,
+      "max": 59
+    },
+    {
+      "type": "Input.Text",
+      "value": "durationCard",
+      "id": "card",
+      "isVisible": false
+    },
+    {
+      "type": "Input.Text",
+      "value": "${resource}",
+      "id": "resource",
+      "isVisible": false
+    },
+    {
+      "type": "Input.Text",
+      "value": "${action}",
+      "id": "action",
+      "isVisible": false
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Submit",
+      "data": {
+        "action": "submitDuration"
+      }
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.3"
+}

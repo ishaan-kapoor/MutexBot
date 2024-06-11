@@ -21,19 +21,20 @@ public class ResourceService {
 
   public Resource find(String name) throws Exception {
     Optional<Resource> resource = repo.findById(name);
-    if (! resource.isPresent()) {
-      Resource new_resource = new Resource(name);
-      save(new_resource);
-      resource = repo.findById(name);
-      if (! resource.isPresent()) {
-        throw new Exception("Created a resouce, but couldn't fetch it.");
-      }
-    }
+    if (! resource.isPresent()) { return null; }
     return resource.get();
   }
 
   public void save(Resource resource) {
     repo.save(resource);
+  }
+
+  public boolean exists(String name) {
+    return repo.existsById(name);
+  }
+
+  public void delete(String name) {
+    repo.deleteById(name);
   }
 
 }
