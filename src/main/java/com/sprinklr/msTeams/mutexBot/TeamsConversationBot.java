@@ -23,7 +23,7 @@ public class TeamsConversationBot extends TeamsActivityHandler {
   private final UserService userService;
   private final UserInput userInput;
   private final Actions actions;
-  private final static String helpMessage = "Commands:<br> &emsp;Reserve \\<Resource\\> [for \\<Duration\\>]<br> &emsp;Release \\<Resource\\><br> &emsp;Status \\<Resource\\><br> &emsp;Monitor \\<Resource\\> [for \\<Duration\\>]<br> &emsp;StopMonitoring \\<Resource\\><br><br>e.g.<br> &emsp;Reserve prod:qa6 for 12m<br> &emsp;StopMonitoring dev:qa6<br><br><hr>Send \"Hello\" for welcome card.<br>Send \"run\" to select a resource.";
+  private final static String helpMessage = "Commands:<br> &emsp;Reserve \\<Resource\\> [for \\<Duration\\>]<br> &emsp;Release \\<Resource\\><br> &emsp;Status \\<Resource\\><br> &emsp;Monitor \\<Resource\\> [for \\<Duration\\>]<br> &emsp;StopMonitoring \\<Resource\\><br><br>e.g.<br> &emsp;Reserve prod:qa6 for 1h12m<br> &emsp;StopMonitoring dev:qa6<br><br><hr>Send \"Hello\" for welcome card.<br>Send \"run\" to select a resource.";
 
   @Autowired
   public TeamsConversationBot(
@@ -76,7 +76,7 @@ public class TeamsConversationBot extends TeamsActivityHandler {
           Utils.timeString2Int(message_array[3].toLowerCase()));
     }
     Utils.sendMessage(turnContext, "Invalid message recieved:<br>" + message);
-    return userInput.resourceSelection(turnContext);
+    return Utils.sendMessage(turnContext, userInput.welcomeCard());
 
     // if (text.contains("mention me")) {
     // return mentionAdaptiveCardActivityAsync(turnContext);
