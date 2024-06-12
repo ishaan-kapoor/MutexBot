@@ -54,7 +54,6 @@ public class UserService {
   }
 
   public void save(User user) {
-    System.out.println("Saved");
     repo.save(user);
   }
 
