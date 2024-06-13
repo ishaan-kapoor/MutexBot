@@ -15,12 +15,12 @@
     },
     {
       "type": "TextBlock",
-      "text": "Enter the 2nd Argument"
+      "text": "Enter user email or resource name"
     },
     {
       "type": "Input.Text",
       "id": "arg",
-      "placeholder": "Enter the email of uer, for user actions and resource name for resource actions"
+      "placeholder": "user email for user actions and resource name for resource actions"
     },
     {
       "type": "Input.Text",
