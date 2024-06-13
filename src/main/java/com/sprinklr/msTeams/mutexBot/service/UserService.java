@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.microsoft.bot.schema.ChannelAccount;
-import com.microsoft.bot.schema.teams.TeamsChannelAccount;
 import com.sprinklr.msTeams.mutexBot.model.User;
 import com.sprinklr.msTeams.mutexBot.repositories.UserRepository;
 
@@ -31,6 +30,10 @@ public class UserService {
       }
     }
     return user.get();
+  }
+
+  public User findByEmail(String email) {
+    return repo.findByEmail(email);
   }
 
   public boolean exists(ChannelAccount user) {

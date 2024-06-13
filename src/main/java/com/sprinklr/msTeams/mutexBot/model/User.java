@@ -42,5 +42,5 @@ public class User {
   public void setEmail(String email) { this.email = email; }
   public String toString() { return String.format("%s (%s)", name, id); }
   public void makeAdmin() { admin = true; }
-  public void removeAdmin() { admin = false; }
+  public void dismissAdmin() { admin = false; }
 }

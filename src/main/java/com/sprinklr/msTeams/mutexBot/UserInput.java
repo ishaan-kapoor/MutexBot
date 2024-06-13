@@ -48,12 +48,39 @@ public class UserInput {
     runButton.setText("run");
     buttons.add(runButton);
 
+    CardAction adminButton = new CardAction();
+    adminButton.setType(ActionTypes.MESSAGE_BACK);
+    adminButton.setTitle("Perform Admin actions");
+    adminButton.setText("admin");
+    buttons.add(adminButton);
+
     HeroCard card = new HeroCard();
     card.setButtons(buttons);
     card.setTitle("Welcome!");
     card.setSubtitle("Manage your Jenkins Resources with Mutex Bot.");
     card.setText("Once reserved, no one can override your builds, till you release the resource.");
     return MessageFactory.attachment(card.toAttachment());
+
+    // String templateJSON;
+    // try {
+    //   templateJSON = getTemplateJson(Utils.FORM_ADAPTIVE_CARD_TEMPLATE);
+    // } catch (IOException e) {
+    //   e.printStackTrace();
+    //   return MessageFactory.text("Error while loading adaptive card.<br>" + e);
+    // }
+    // if (templateJSON == null) {
+    //   return MessageFactory.text(cardNotFoundMessage);
+    // }
+    //
+    // String cardJSON = templateJSON;
+    // JsonNode content;
+    // try { content = Serialization.jsonToTree(cardJSON); }
+    // catch (IOException e) {
+    //   e.printStackTrace();
+    //   return MessageFactory.text("Error while serializing adaptive card.<br>" );
+    // }
+    //
+    // return getAdaptiveCardAttachment(content);
   }
 
   protected CompletableFuture<Void> resourceSelection(TurnContext turnContext) {
@@ -135,6 +162,35 @@ public class UserInput {
     InputStream inputStream = getClass().getResourceAsStream(templatePath);
     if (inputStream == null) { return null; }
     return IOUtils.toString(inputStream, StandardCharsets.UTF_8.toString());
+  }
+
+  protected CompletableFuture<Void> adminActionSelection(TurnContext turnContext) {
+    String templateJSON;
+    try {
+      templateJSON = getTemplateJson(Utils.ADMIN_ACTIONS_ADAPTIVE_CARD_TEMPLATE);
+    } catch (IOException e) {
+      e.printStackTrace();
+      return Utils.sendMessage(turnContext, "Error while loading adaptive card.<br>" + e);
+    }
+    if (templateJSON == null) {
+      return Utils.sendMessage(turnContext, cardNotFoundMessage);
+    }
+
+    StringBuilder choicesBuilder = new StringBuilder();
+    for (String action: Utils.adminActions) {
+      if (choicesBuilder.length() > 0) { choicesBuilder.append(", "); }
+      choicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", action, action.toLowerCase()));
+    }
+    String cardJSON = templateJSON.replace("{}", choicesBuilder.toString());
+
+    JsonNode content;
+    try { content = Serialization.jsonToTree(cardJSON); }
+    catch (IOException e) {
+      e.printStackTrace();
+      return Utils.sendMessage(turnContext, "Error while serializing adaptive card.<br>" + e);
+    }
+
+    return Utils.sendMessage(turnContext, getAdaptiveCardAttachment(content));
   }
 
   protected CompletableFuture<Void> actionSelection(TurnContext turnContext, String resource) {

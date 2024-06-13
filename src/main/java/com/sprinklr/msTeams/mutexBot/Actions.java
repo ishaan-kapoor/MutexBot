@@ -51,7 +51,7 @@ public class Actions {
 
   protected CompletableFuture<Void> actOnResource(TurnContext turnContext, String resource_name, String action) {
     for (String act : Utils.adminActions) {
-      if (act.equals(action)) {
+      if (act.toLowerCase().equals(action)) {
         return adminAction(turnContext, resource_name, action);
       }
     }
@@ -103,31 +103,73 @@ public class Actions {
     }
     if ((user == null)) {
       userService.save(new User(teamsUser));
-      return Utils.sendMessage(turnContext, "Only admins can create/delete resources");
+      return Utils.sendMessage(turnContext, "Only admins can perform this action");
     }
     if (!userService.exists(user_id)) {
       userService.save(new User(teamsUser));
     }
     if (!user.isAdmin()) {
-      return Utils.sendMessage(turnContext, "Only admins can create/delete resources");
+      return Utils.sendMessage(turnContext, "Only admins can perform this action");
+    }
+
+    if (action.equals("makeadmin")) {
+      User newUser = userService.findByEmail(resource_name);
+      if (newUser == null) {
+        return Utils.sendMessage(turnContext, "User not found");
+      }
+      if (newUser.isAdmin()) {
+        return Utils.sendMessage(turnContext, String.format("%s is alredy admin.", Utils.user2hyperlink(newUser)));
+      }
+      newUser.makeAdmin();
+      userService.save(newUser);
+      return Utils.sendMessage(turnContext, String.format("%s is now an admin", Utils.user2hyperlink(newUser)));
+    }
+
+    if (action.equals("dismissadmin")) {
+      User newUser = userService.findByEmail(resource_name);
+      if (newUser == null) {
+        return Utils.sendMessage(turnContext, "User not found");
+      }
+      if (!newUser.isAdmin()) {
+        return Utils.sendMessage(turnContext, String.format("%s was not admin.", Utils.user2hyperlink(newUser)));
+      }
+      newUser.dismissAdmin();
+      userService.save(newUser);
+      return Utils.sendMessage(turnContext, String.format("%s is now dismissed as admin", Utils.user2hyperlink(newUser)));
     }
 
     boolean exists = resourceService.exists(resource_name);
-    if (action.equals("create")) {
+    if (action.equals("createresource")) {
       if (exists) {
         return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" already exists.");
       }
       resourceService.save(new Resource(resource_name));
       return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" created successfully.");
-    } else if (action.equals("delete")) {
+    }
+
+    if (action.equals("deleteresource")) {
       if (!exists) {
         return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
       }
       resourceService.delete(resource_name);
       return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" deleted successfully.");
-    } else {
-      return Utils.sendMessage(turnContext, "Invalid admin action: " + action);
     }
+
+    if (action.equals("forcerelease")) {
+      Resource resource;
+      try {
+        resource = resourceService.find(resource_name);
+      } catch (Exception e) {
+        e.printStackTrace();
+        return Utils.sendMessage(turnContext, "Exception while fetching resource.");
+      }
+      if (resource == null) {
+        return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+      }
+      return Utils.sendMessage(turnContext, releaseResource(teamsUser, turnContext, resource, true));
+    }
+
+    return Utils.sendMessage(turnContext, "Invalid admin action: " + action);
   }
 
   protected CompletableFuture<Void> actOnResource(TurnContext turnContext, String resource_name, String action,
@@ -182,22 +224,40 @@ public class Actions {
   }
 
   protected Activity releaseResource(TeamsChannelAccount user, TurnContext turnContext, Resource resource) {
+    return releaseResource(user, turnContext, resource, false);
+  }
+  protected Activity releaseResource(TeamsChannelAccount user, TurnContext turnContext, Resource resource, boolean force) {
     if (!resource.isReserved()) {
       return MessageFactory.text(String.format("Resource \"%s\" is not reserved by anyone.", resource.getName()));
     }
 
     String reservingUserId = resource.reservedBy;
     if (!user.getId().equals(reservingUserId)) {
-      User reservingUser;
-      try {
-        reservingUser = userService.find(reservingUserId);
-      } catch (Exception e) {
-        System.out.println("Error while fetching monitoring user");
-        e.printStackTrace();
-        reservingUser = new User(reservingUserId);
+      User releasingUser = null;
+      if (force) {
+        try {
+          releasingUser = userService.find(user.getId());
+        } catch (Exception e) {
+          e.printStackTrace();
+          return MessageFactory.text("Error while fetching releasing user");
+        }
+        if (releasingUser == null) {
+          releasingUser = new User(user);
+          userService.save(releasingUser);
+        }
       }
-      return MessageFactory.text(String.format("Resource \"%s\" is reserved by %s", resource.getName(),
-          Utils.user2hyperlink(reservingUser, resource.getName())));
+      if (!(force && releasingUser.isAdmin())) {
+        User reservingUser;
+        try {
+          reservingUser = userService.find(reservingUserId);
+        } catch (Exception e) {
+          System.out.println("Error while fetching reserving user");
+          e.printStackTrace();
+          reservingUser = new User(reservingUserId);
+        }
+        return MessageFactory.text(String.format("Resource \"%s\" is reserved by %s till %s", resource.getName(),
+            Utils.user2hyperlink(reservingUser, resource.getName()), Utils.time2hyperlink(resource.reservedTill)));
+      }
     }
 
     resource.release();
@@ -263,6 +323,15 @@ public class Actions {
     }
 
     return MessageFactory.text(response);
+  }
+
+  protected CompletableFuture<Void> handleAdminActionsCard(TurnContext turnContext, Map<String, Object> data) {
+    String action = (String) data.get("action");
+    String arg = (String) data.get("arg");
+    if ((action == null)||(arg == null)) {
+      return Utils.sendMessage(turnContext, "Please enter a valid action and arg.");
+    }
+    return adminAction(turnContext, arg, action);
   }
 
   protected CompletableFuture<Void> handleResourceCard(TurnContext turnContext, Map<String, Object> data) {

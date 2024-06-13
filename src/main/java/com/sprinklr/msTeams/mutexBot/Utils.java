@@ -39,12 +39,14 @@ import java.time.format.DateTimeFormatter;
 public class Utils {
 
   public static final String[] actions = { "Reserve", "Release", "Status", "Monitor", "StopMonitoring" };
-  public static final String[] adminActions = { "create", "delete", "makeAdmin" };
+  public static final String[] adminActions = { "createResource", "deleteResource", "makeAdmin", "dismissAdmin", "forceRelease" };
   private static DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss (dd/MM/yyyy)");
   public static final String ADAPTIVE_CARD_TEMPLATE = "UserMentionCardTemplate.json";
   public static final String DATE_TIME_ADAPTIVE_CARD_TEMPLATE = "/datetime.json";
   public static final String DURATION_ADAPTIVE_CARD_TEMPLATE = "/duration.json";
   public static final String DROPDOWN_ADAPTIVE_CARD_TEMPLATE = "/dropdown.json";
+  public static final String ADMIN_ACTIONS_ADAPTIVE_CARD_TEMPLATE = "/adminActions.json";
+  public static final String FORM_ADAPTIVE_CARD_TEMPLATE = "/form.json";
   public static final String UNSURE_ACTION_MESSAGE = "Unsure about the action on Resource: \"%s\".\nRecieved action: \"%s\".";
 
   // --------------------------------------------------------------------------
@@ -57,6 +59,14 @@ public class Utils {
 
   public static String time2hyperlink(LocalDateTime time) {
     return String.format("[%s UTC](%s)", time.format(timeFormat), time2link(time));
+  }
+
+  public static String user2hyperlink(User user) {
+    return String.format("[%s](mailto:%s)", user.getName(), user.getEmail());
+  }
+
+  public static String user2hyperlink(TeamsChannelAccount user) {
+    return String.format("[%s](mailto:%s)", user.getName(), user.getEmail());
   }
 
   public static String user2hyperlink(User user, String resource) {

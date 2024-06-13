@@ -54,6 +54,8 @@ public class TeamsConversationBot extends TeamsActivityHandler {
           return actions.handleDurationCard(turnContext, data);
         } else if (card.equals("resourceCard")) {
           return actions.handleResourceCard(turnContext, data);
+        } else if (card.equals("adminActionsCard")) {
+          return actions.handleAdminActionsCard(turnContext, data);
         }
       }
       return Utils.sendMessage(turnContext, "No message recieved.");
@@ -67,6 +69,8 @@ public class TeamsConversationBot extends TeamsActivityHandler {
       return Utils.sendMessage(turnContext, helpMessage);
     } else if ((message_array.length == 1) && (message.toLowerCase().equals("run"))) {
       return userInput.resourceSelection(turnContext);
+    } else if ((message_array.length == 1) && (message.toLowerCase().equals("admin"))) {
+      return userInput.adminActionSelection(turnContext);
     } else if ((message_array.length == 1) && ( (message.toLowerCase().equals("hello")) || (message.toLowerCase().equals("hi")) )) {
       return Utils.sendMessage(turnContext, userInput.welcomeCard());
     } else if (message_array.length == 2) {
