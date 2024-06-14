@@ -63,9 +63,10 @@ public class UserInput {
   }
 
   protected CompletableFuture<Void> resourceSelection(TurnContext turnContext) {
+    List<Resource> resources = resourceService.getAll();
     String templateJSON;
     try {
-      templateJSON = getTemplateJson(Utils.FORM_ADAPTIVE_CARD_TEMPLATE);
+      templateJSON = getTemplateJson(Utils.DROPDOWN_ADAPTIVE_CARD_TEMPLATE);
     } catch (IOException e) {
       e.printStackTrace();
       return Utils.sendMessage(turnContext, "Error while loading adaptive card.<br>" + e);
@@ -74,21 +75,12 @@ public class UserInput {
       return Utils.sendMessage(turnContext, cardNotFoundMessage);
     }
 
-    StringBuilder chartChoicesBuilder = new StringBuilder();
-    String[] chart_names = {"Chart1", "Chart2", "Chart3", "Chart4", "Chart5", "Chart6", "Chart7", "Chart8", "Chart9", "Chart10"};
-    for (String chart_name : chart_names) {
-      if (chartChoicesBuilder.length() > 0) { chartChoicesBuilder.append(", "); }
-      chartChoicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", chart_name, chart_name));
+    StringBuilder choicesBuilder = new StringBuilder();
+    for (Resource resource : resources) {
+      if (choicesBuilder.length() > 0) { choicesBuilder.append(", "); }
+      choicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", resource.getName(), resource.getName()));
     }
-    String cardJSON = templateJSON.replaceFirst("\\{\\}", chartChoicesBuilder.toString());
-
-    StringBuilder releaseChoicesBuilder = new StringBuilder();
-    String[] release_names = {"Release1", "Release2", "Release3", "Release4", "Release5", "Release6", "Release7", "Release8", "Release9", "Release10"};
-    for (String release_name : release_names) {
-      if (releaseChoicesBuilder.length() > 0) { releaseChoicesBuilder.append(", "); }
-      releaseChoicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", release_name, release_name));
-    }
-    cardJSON = cardJSON.replaceFirst("\\{\\}", releaseChoicesBuilder.toString());
+    String cardJSON = templateJSON.replace("{}", choicesBuilder.toString());
 
     JsonNode content;
     try { content = Serialization.jsonToTree(cardJSON); }

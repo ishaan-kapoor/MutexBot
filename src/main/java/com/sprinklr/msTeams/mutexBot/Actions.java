@@ -8,6 +8,7 @@ import com.microsoft.bot.schema.teams.TeamsChannelAccount;
 import com.sprinklr.msTeams.mutexBot.model.ReservationLog;
 import com.sprinklr.msTeams.mutexBot.model.Resource;
 import com.sprinklr.msTeams.mutexBot.model.User;
+import com.sprinklr.msTeams.mutexBot.service.MonitorLogService;
 import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 import com.sprinklr.msTeams.mutexBot.service.UserService;
@@ -28,13 +29,15 @@ public class Actions {
   private String appId;
   private String appPassword;
   private ReservationLogService reservationLogService;
+  private MonitorLogService monitorLogService;
 
-  public Actions(ResourceService resourceService, UserService userService, ReservationLogService reservationLogService, UserInput userInput,
+  public Actions(ResourceService resourceService, UserService userService, ReservationLogService reservationLogService, MonitorLogService monitorLogService, UserInput userInput,
       @Value("${MicrosoftAppId}") String appId, @Value("${MicrosoftAppPassword}") String appPassword) {
     this.resourceService = resourceService;
     this.userService = userService;
     this.userInput = userInput;
     this.reservationLogService = reservationLogService;
+    this.monitorLogService = monitorLogService;
     this.appId = appId;
     this.appPassword = appPassword;
   }
@@ -213,6 +216,8 @@ public class Actions {
     resource.stopMonitoring(user.getId());
     resourceService.save(resource);
 
+    monitorLogService.stopMonitoring(resource.getName(), user.getId());
+
     String message = String.format(" stopped monitoring \"%s\".", resource.getName());
     return Utils.makeMentionedResponse(user, message);
   }
@@ -221,6 +226,8 @@ public class Actions {
     LocalDateTime monitorTill = LocalDateTime.now().plusMinutes(duration);
     resource.monitor(user.getId(), monitorTill);
     resourceService.save(resource);
+
+    monitorLogService.monitor(resource.getName(), user.getId(), monitorTill);
 
     String message = String.format(" is monitoring \"%s\" till %s.", resource.getName(),
         Utils.time2hyperlink(monitorTill));
