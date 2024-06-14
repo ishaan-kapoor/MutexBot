@@ -6,6 +6,7 @@ import com.microsoft.bot.schema.teams.TeamInfo;
 import com.microsoft.bot.schema.teams.TeamsChannelAccount;
 
 import com.sprinklr.msTeams.mutexBot.model.User;
+import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 import com.sprinklr.msTeams.mutexBot.service.UserService;
 
@@ -21,6 +22,7 @@ public class TeamsConversationBot extends TeamsActivityHandler {
   private final String appPassword;
   private final ResourceService resourceService;
   private final UserService userService;
+  private final ReservationLogService reservationLogService;
   private final UserInput userInput;
   private final Actions actions;
   private final static String helpMessage = "Commands:<br> &emsp;Reserve \\<Resource\\> [for \\<Duration\\>]<br> &emsp;Release \\<Resource\\><br> &emsp;Status \\<Resource\\><br> &emsp;Monitor \\<Resource\\> [for \\<Duration\\>]<br> &emsp;StopMonitoring \\<Resource\\><br>e.g.<br> &emsp;Reserve prod:qa6 for 1h12m<br> &emsp;StopMonitoring dev:qa6<br><br>Admin only commands:<br> &emsp;CreateResource \\<Resource\\><br> &emsp;DeleteResource \\<Resource\\><br> &emsp;ForceRelease \\<Resource\\><br> &emsp;MakeAdmin \\<user email\\><br> &emsp;DismissAdmin \\<user email\\><br><br><hr>Send \"Hello\" for welcome card.<br>Send \"run\" to select a resource.";
@@ -32,12 +34,14 @@ public class TeamsConversationBot extends TeamsActivityHandler {
       ResourceService resourceService,
       UserService userService,
       UserInput userInput,
+      ReservationLogService reservationLogService,
       Actions actions) {
     this.appId = appId;
     this.appPassword = appPassword;
     this.resourceService = resourceService;
     this.userService = userService;
     this.userInput = userInput;
+    this.reservationLogService = reservationLogService;
     this.actions = actions;
   }
 
@@ -56,6 +60,8 @@ public class TeamsConversationBot extends TeamsActivityHandler {
           return actions.handleResourceCard(turnContext, data);
         } else if (card.equals("adminActionsCard")) {
           return actions.handleAdminActionsCard(turnContext, data);
+        } else if (card.equals("resourceFormCard")) {
+          return actions.handleResourceFormCard(turnContext, data);
         }
       }
       return Utils.sendMessage(turnContext, "No message recieved.");

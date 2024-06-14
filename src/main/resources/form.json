@@ -5,101 +5,38 @@
   "body": [
     {
       "type": "TextBlock",
-      "text": "Project apps-k8s-build-deploy-webui",
+      "text": "Chart Name",
       "weight": "Bolder",
-      "size": "Medium"
-    },
-    {
-      "type": "TextBlock",
-      "text": "This build requires parameters:",
-      "wrap": true
-    },
-    {
-      "type": "TextBlock",
-      "text": "CHART_NAME",
+      "size": "Medium",
       "wrap": true
     },
     {
       "type": "Input.ChoiceSet",
       "id": "chart_name",
-      "style": "compact",
+      "style": "filtered",
       "choices": [
-        {
-          "title": "webui",
-          "value": "webui"
-        }
-      ],
-      "placeholder": "Select an option"
+        {}
+      ]
     },
     {
       "type": "TextBlock",
-      "text": "CHART_RELEASE_NAME",
+      "text": "Chart Release Name",
+      "size": "Medium",
       "wrap": true
     },
     {
-      "type": "Input.Text",
+      "type": "Input.ChoiceSet",
       "id": "chart_release_name",
-      "value": "qa6-auth",
-      "placeholder": "Enter release name"
-    },
-    {
-      "type": "TextBlock",
-      "text": "JOB_MODE",
-      "wrap": true
-    },
-    {
-      "type": "Input.ChoiceSet",
-      "id": "job_mode",
-      "style": "compact",
+      "style": "filtered",
       "choices": [
-        {
-          "title": "build-image",
-          "value": "build-image"
-        }
-      ],
-      "placeholder": "Select an option"
-    },
-    {
-      "type": "TextBlock",
-      "text": "IMAGE_TAG",
-      "wrap": true
+        {}
+      ]
     },
     {
       "type": "Input.Text",
-      "id": "image_tag",
-      "placeholder": "Provide the image tag if you know, give only when choosing only deploy option"
-    },
-    {
-      "type": "TextBlock",
-      "text": "DEBUG_SCRIPT",
-      "wrap": true
-    },
-    {
-      "type": "Input.ChoiceSet",
-      "id": "debug_script",
-      "style": "expanded",
-      "choices": [
-        {
-          "title": "true",
-          "value": "true"
-        },
-        {
-          "title": "false",
-          "value": "false"
-        }
-      ],
-      "value": "false"
-    },
-    {
-      "type": "TextBlock",
-      "text": "ANY_BRANCH_OR_SHA1",
-      "wrap": true
-    },
-    {
-      "type": "Input.Text",
-      "id": "any_branch_or_sha1",
-      "value": "origin/master",
-      "placeholder": "Enter branch or SHA1"
+      "value": "resourceFormCard",
+      "id": "card",
+      "isVisible": false
     }
   ],
   "actions": [

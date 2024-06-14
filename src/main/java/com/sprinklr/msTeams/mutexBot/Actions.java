@@ -5,8 +5,10 @@ import com.microsoft.bot.builder.TurnContext;
 import com.microsoft.bot.builder.teams.TeamsInfo;
 import com.microsoft.bot.schema.Activity;
 import com.microsoft.bot.schema.teams.TeamsChannelAccount;
+import com.sprinklr.msTeams.mutexBot.model.ReservationLog;
 import com.sprinklr.msTeams.mutexBot.model.Resource;
 import com.sprinklr.msTeams.mutexBot.model.User;
+import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 import com.sprinklr.msTeams.mutexBot.service.UserService;
 import com.sprinklr.msTeams.mutexBot.utils.UserTimeEntry;
@@ -25,12 +27,14 @@ public class Actions {
   private UserInput userInput;
   private String appId;
   private String appPassword;
+  private ReservationLogService reservationLogService;
 
-  public Actions(ResourceService resourceService, UserService userService, UserInput userInput,
+  public Actions(ResourceService resourceService, UserService userService, ReservationLogService reservationLogService, UserInput userInput,
       @Value("${MicrosoftAppId}") String appId, @Value("${MicrosoftAppPassword}") String appPassword) {
     this.resourceService = resourceService;
     this.userService = userService;
     this.userInput = userInput;
+    this.reservationLogService = reservationLogService;
     this.appId = appId;
     this.appPassword = appPassword;
   }
@@ -264,6 +268,8 @@ public class Actions {
     resource.clean_monitor_list();
     resourceService.save(resource);
 
+    reservationLogService.release(resource.getName(), resource.reservedBy);
+
     String message = String.format(" released \"%s\".", resource.getName());
 
     for (UserTimeEntry entry : resource.monitoredBy) {
@@ -292,6 +298,8 @@ public class Actions {
     resource.reserve(user.getId(), reserveTill);
     resource.clean_monitor_list();
     resourceService.save(resource);
+
+    reservationLogService.reserve(resource.getName(), user.getId(), reserveTill);
 
     String message = String.format(" reserved \"%s\" till %s.", resource.getName(), Utils.time2hyperlink(reserveTill));
 
@@ -332,6 +340,15 @@ public class Actions {
       return Utils.sendMessage(turnContext, "Please enter a valid action and arg.");
     }
     return adminAction(turnContext, arg, action);
+  }
+
+  protected CompletableFuture<Void> handleResourceFormCard(TurnContext turnContext, Map<String, Object> data) {
+    String chartName = (String) data.get("chart_name");
+    String releaseName = (String) data.get("chart_release_name");
+    if ((chartName == null) || (releaseName == null)) {
+      return Utils.sendMessage(turnContext, "Please enter a valid resource name.");
+    }
+    return actOnResource(turnContext, chartName + "-" + releaseName);
   }
 
   protected CompletableFuture<Void> handleResourceCard(TurnContext turnContext, Map<String, Object> data) {

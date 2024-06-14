@@ -3,19 +3,29 @@
   "body": [
     {
       "type": "TextBlock",
-      "text": "How long do you wish to ${action} ${resource} for (in Hours and Minutes): "
+      "text": "How long do you wish to ${action} ${resource} for:",
+      "weight": "Bolder",
+      "wrap": true
+    },
+    {
+      "type": "TextBlock",
+      "text": "Hours:"
     },
     {
       "type": "Input.Number",
       "id": "hours",
-      "placeholder": "Enter hours",
+      "value": 0,
       "min": 0,
       "max": 23
     },
     {
+      "type": "TextBlock",
+      "text": "Minutes:"
+    },
+    {
       "type": "Input.Number",
       "id": "minutes",
-      "placeholder": "Enter minutes",
+      "value": 0,
       "min": 0,
       "max": 59
     },

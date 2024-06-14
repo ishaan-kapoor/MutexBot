@@ -97,6 +97,8 @@ public class Resource {
   public boolean isReserved() {
     // System.out.println("res called");
     // System.out.println(reserved);
+    // System.out.println(reservedTill);
+    // System.out.println(LocalDateTime.now());
     if (!reserved) { return false; }
     if (reservedTill == null) { return false; }
     if (reservedTill.isBefore(LocalDateTime.now())) { reserved = false; }

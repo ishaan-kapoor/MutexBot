@@ -40,7 +40,7 @@ public class Utils {
 
   public static final String[] actions = { "Reserve", "Release", "Status", "Monitor", "StopMonitoring" };
   public static final String[] adminActions = { "createResource", "deleteResource", "makeAdmin", "dismissAdmin", "forceRelease" };
-  private static DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss (dd/MM/yyyy)");
+  public static DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss (dd/MM/yyyy)");
   public static final String ADAPTIVE_CARD_TEMPLATE = "UserMentionCardTemplate.json";
   public static final String DATE_TIME_ADAPTIVE_CARD_TEMPLATE = "/datetime.json";
   public static final String DURATION_ADAPTIVE_CARD_TEMPLATE = "/duration.json";
