@@ -89,7 +89,7 @@ public class UserInput {
       chartChoicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", releaseName, releaseName));
     }
     String cardJSON = templateJSON.replaceFirst("\\{\\}", chartChoicesBuilder.toString());
-    cardJSON = cardJSON.replace("$(fieldName)", "Release Name:");
+    cardJSON = cardJSON.replace("$(fieldName)", "Resource Name:");
     cardJSON = cardJSON.replace("$(cardName)", "releaseNameCard");
 
     JsonNode content;

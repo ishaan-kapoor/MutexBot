@@ -39,7 +39,7 @@ public class ResourceService {
   }
 
   public List<String> findByChartName(String chartName) {
-    List<Resource> resources = repo.findByIdStartingWith(chartName);
+    List<Resource> resources = repo.findByIdStartingWith(chartName+"-");
     List<String> releaseNames = new ArrayList<String>();
     for (Resource resource: resources) {
       releaseNames.add(resource.getName());
