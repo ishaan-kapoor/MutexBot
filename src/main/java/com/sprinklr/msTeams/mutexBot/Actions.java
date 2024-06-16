@@ -147,7 +147,24 @@ public class Actions {
       return Utils.sendMessage(turnContext, String.format("%s is now dismissed as admin", Utils.user2hyperlink(newUser)));
     }
 
-    boolean exists = resourceService.exists(resource_name);
+    boolean exists = chartNameService.exists(resource_name);
+    if (action.equals("createchartname")) {
+      if (exists) {
+        return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" already exists.");
+      }
+      chartNameService.save(resource_name);
+      return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" created successfully.");
+    }
+
+    if (action.equals("deletechartname")) {
+      if (!exists) {
+        return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" not found.");
+      }
+      chartNameService.delete(resource_name);
+      return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" deleted successfully.");
+    }
+
+    exists = resourceService.exists(resource_name);
     if (action.equals("createresource")) {
       if (exists) {
         return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" already exists.");
@@ -162,22 +179,6 @@ public class Actions {
       }
       resourceService.delete(resource_name);
       return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" deleted successfully.");
-    }
-
-    if (action.equals("createchartname")) {
-      if (chartNameService.exists(resource_name)) {
-        return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" already exists.");
-      }
-      chartNameService.save(resource_name);
-      return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" created successfully.");
-    }
-
-    if (action.equals("deletechartname")) {
-      if (!chartNameService.exists(resource_name)) {
-        return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" not found.");
-      }
-      chartNameService.delete(resource_name);
-      return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" deleted successfully.");
     }
 
     if (action.equals("forcerelease")) {

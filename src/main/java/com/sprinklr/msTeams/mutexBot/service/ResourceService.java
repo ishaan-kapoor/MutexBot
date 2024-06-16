@@ -1,5 +1,6 @@
 package com.sprinklr.msTeams.mutexBot.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +19,14 @@ public class ResourceService {
 
   public List<Resource> getAll() {
     return repo.findAll();
+  }
+
+  public List<Resource> getReserved() {
+    return repo.findReservedResources(LocalDateTime.now());
+  }
+
+  public List<Resource> getAvailable() {
+    return repo.findAvailableResources(LocalDateTime.now());
   }
 
   public Resource find(String name) throws Exception {
