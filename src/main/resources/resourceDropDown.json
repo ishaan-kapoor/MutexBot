@@ -1,0 +1,36 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.3",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "$(fieldName)",
+      "weight": "Bolder",
+      "size": "Medium",
+      "wrap": true
+    },
+    {
+      "type": "Input.ChoiceSet",
+      "id": "value",
+      "style": "filtered",
+      "choices": [
+        {}
+      ]
+    },
+    {
+      "type": "Input.Text",
+      "value": "$(cardName)",
+      "id": "card",
+      "isVisible": false
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "Submit"
+    }
+  ]
+}
+
+

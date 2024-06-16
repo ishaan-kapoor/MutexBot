@@ -5,9 +5,9 @@ import com.microsoft.bot.builder.TurnContext;
 import com.microsoft.bot.builder.teams.TeamsInfo;
 import com.microsoft.bot.schema.Activity;
 import com.microsoft.bot.schema.teams.TeamsChannelAccount;
-import com.sprinklr.msTeams.mutexBot.model.ReservationLog;
 import com.sprinklr.msTeams.mutexBot.model.Resource;
 import com.sprinklr.msTeams.mutexBot.model.User;
+import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
 import com.sprinklr.msTeams.mutexBot.service.MonitorLogService;
 import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
@@ -30,14 +30,16 @@ public class Actions {
   private String appPassword;
   private ReservationLogService reservationLogService;
   private MonitorLogService monitorLogService;
+  private ChartNameService chartNameService;
 
-  public Actions(ResourceService resourceService, UserService userService, ReservationLogService reservationLogService, MonitorLogService monitorLogService, UserInput userInput,
+  public Actions(ResourceService resourceService, UserService userService, ReservationLogService reservationLogService, MonitorLogService monitorLogService, ChartNameService chartNameService, UserInput userInput,
       @Value("${MicrosoftAppId}") String appId, @Value("${MicrosoftAppPassword}") String appPassword) {
     this.resourceService = resourceService;
     this.userService = userService;
     this.userInput = userInput;
     this.reservationLogService = reservationLogService;
     this.monitorLogService = monitorLogService;
+    this.chartNameService = chartNameService;
     this.appId = appId;
     this.appPassword = appPassword;
   }
@@ -160,6 +162,22 @@ public class Actions {
       }
       resourceService.delete(resource_name);
       return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" deleted successfully.");
+    }
+
+    if (action.equals("createchartname")) {
+      if (chartNameService.exists(resource_name)) {
+        return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" already exists.");
+      }
+      chartNameService.save(resource_name);
+      return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" created successfully.");
+    }
+
+    if (action.equals("deletechartname")) {
+      if (!chartNameService.exists(resource_name)) {
+        return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" not found.");
+      }
+      chartNameService.delete(resource_name);
+      return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" deleted successfully.");
     }
 
     if (action.equals("forcerelease")) {
@@ -347,6 +365,22 @@ public class Actions {
       return Utils.sendMessage(turnContext, "Please enter a valid action and arg.");
     }
     return adminAction(turnContext, arg, action);
+  }
+
+  protected CompletableFuture<Void> handleReleaseNameCard(TurnContext turnContext, Map<String, Object> data) {
+    String releaseName = (String) data.get("value");
+    if (releaseName == null) {
+      return Utils.sendMessage(turnContext, "Please enter a valid resource name.");
+    }
+    return actOnResource(turnContext, releaseName);
+  }
+
+  protected CompletableFuture<Void> handleChartNameCard(TurnContext turnContext, Map<String, Object> data) {
+    String chartName = (String) data.get("value");
+    if (chartName == null) {
+      return Utils.sendMessage(turnContext, "Please enter a valid resource name.");
+    }
+    return userInput.releaseNameSelection(turnContext, chartName);
   }
 
   protected CompletableFuture<Void> handleResourceFormCard(TurnContext turnContext, Map<String, Object> data) {

@@ -1,5 +1,6 @@
 package com.sprinklr.msTeams.mutexBot.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +36,15 @@ public class ResourceService {
 
   public void delete(String name) {
     repo.deleteById(name);
+  }
+
+  public List<String> findByChartName(String chartName) {
+    List<Resource> resources = repo.findByIdStartingWith(chartName);
+    List<String> releaseNames = new ArrayList<String>();
+    for (Resource resource: resources) {
+      releaseNames.add(resource.getName());
+    }
+    return releaseNames;
   }
 
 }

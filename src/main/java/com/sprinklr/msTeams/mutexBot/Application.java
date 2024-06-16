@@ -6,6 +6,7 @@ import com.microsoft.bot.integration.BotFrameworkHttpAdapter;
 import com.microsoft.bot.integration.Configuration;
 import com.microsoft.bot.integration.spring.BotController;
 import com.microsoft.bot.integration.spring.BotDependencyConfiguration;
+import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
 import com.sprinklr.msTeams.mutexBot.service.MonitorLogService;
 import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
@@ -58,10 +59,11 @@ public class Application extends BotDependencyConfiguration {
     UserInput userInput,
     ReservationLogService reservationLogService,
     MonitorLogService monitorLogService,
+    ChartNameService chartNameService,
     Actions actions
   ) {
     return new TeamsConversationBot(
-      appId, appPassword, resourceService, userService, userInput, reservationLogService, monitorLogService, actions
+      appId, appPassword, resourceService, userService, userInput, reservationLogService, monitorLogService, chartNameService, actions
     );
   }
 

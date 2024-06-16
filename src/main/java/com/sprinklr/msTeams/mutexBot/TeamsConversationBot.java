@@ -6,6 +6,7 @@ import com.microsoft.bot.schema.teams.TeamInfo;
 import com.microsoft.bot.schema.teams.TeamsChannelAccount;
 
 import com.sprinklr.msTeams.mutexBot.model.User;
+import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
 import com.sprinklr.msTeams.mutexBot.service.MonitorLogService;
 import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
@@ -25,9 +26,10 @@ public class TeamsConversationBot extends TeamsActivityHandler {
   private final UserService userService;
   private final ReservationLogService reservationLogService;
   private final MonitorLogService monitorLogService;
+  private final ChartNameService chartNameService;
   private final UserInput userInput;
   private final Actions actions;
-  private final static String helpMessage = "Commands:<br> &emsp;Reserve \\<Resource\\> [for \\<Duration\\>]<br> &emsp;Release \\<Resource\\><br> &emsp;Status \\<Resource\\><br> &emsp;Monitor \\<Resource\\> [for \\<Duration\\>]<br> &emsp;StopMonitoring \\<Resource\\><br>e.g.<br> &emsp;Reserve prod:qa6 for 1h12m<br> &emsp;StopMonitoring dev:qa6<br><br>Admin only commands:<br> &emsp;CreateResource \\<Resource\\><br> &emsp;DeleteResource \\<Resource\\><br> &emsp;ForceRelease \\<Resource\\><br> &emsp;MakeAdmin \\<user email\\><br> &emsp;DismissAdmin \\<user email\\><br><br><hr>Send \"Hello\" for welcome card.<br>Send \"run\" to select a resource.";
+  private final static String helpMessage = "Commands:<br> &emsp;Reserve \\<Resource\\> [for \\<Duration\\>]<br> &emsp;Release \\<Resource\\><br> &emsp;Status \\<Resource\\><br> &emsp;Monitor \\<Resource\\> [for \\<Duration\\>]<br> &emsp;StopMonitoring \\<Resource\\><br>e.g.<br> &emsp;Reserve prod:qa6 for 1h12m<br> &emsp;StopMonitoring dev:qa6<br><br>Admin only commands:<br> &emsp;CreateResource \\<Resource\\><br> &emsp;DeleteResource \\<Resource\\><br> &emsp;CreateChartName \\<ChartName\\><br> &emsp;DeleteChartName \\<ChartName\\><br> &emsp;ForceRelease \\<Resource\\><br> &emsp;MakeAdmin \\<user email\\><br> &emsp;DismissAdmin \\<user email\\><br><br><hr>Send \"Hello\" for welcome card.<br>Send \"run\" to select a resource.";
 
   @Autowired
   public TeamsConversationBot(
@@ -38,6 +40,7 @@ public class TeamsConversationBot extends TeamsActivityHandler {
       UserInput userInput,
       ReservationLogService reservationLogService,
       MonitorLogService monitorLogService,
+      ChartNameService chartNameService,
       Actions actions) {
     this.appId = appId;
     this.appPassword = appPassword;
@@ -46,6 +49,7 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     this.userInput = userInput;
     this.reservationLogService = reservationLogService;
     this.monitorLogService = monitorLogService;
+    this.chartNameService = chartNameService;
     this.actions = actions;
   }
 
@@ -66,6 +70,10 @@ public class TeamsConversationBot extends TeamsActivityHandler {
           return actions.handleAdminActionsCard(turnContext, data);
         } else if (card.equals("resourceFormCard")) {
           return actions.handleResourceFormCard(turnContext, data);
+        } else if (card.equals("chartNameCard")) {
+          return actions.handleChartNameCard(turnContext, data);
+        } else if (card.equals("releaseNameCard")) {
+          return actions.handleReleaseNameCard(turnContext, data);
         }
       }
       return Utils.sendMessage(turnContext, "No message recieved.");

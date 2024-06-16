@@ -10,6 +10,7 @@ import com.microsoft.bot.schema.CardAction;
 import com.microsoft.bot.schema.HeroCard;
 import com.microsoft.bot.schema.Serialization;
 import com.sprinklr.msTeams.mutexBot.model.Resource;
+import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 
 import java.io.IOException;
@@ -27,10 +28,12 @@ import org.springframework.stereotype.Component;
 public class UserInput {
   private static final String cardNotFoundMessage = "Error while loading adaptive card.<br>(CODE: json file for card not found)";
   private final ResourceService resourceService;
+  private ChartNameService chartNamesService;
 
   @Autowired
-  public UserInput(ResourceService resourceService) {
+  public UserInput(ResourceService resourceService, ChartNameService chartNamesService) {
     this.resourceService = resourceService;
+    this.chartNamesService = chartNamesService;
   }
 
   protected Activity welcomeCard() {
@@ -63,9 +66,14 @@ public class UserInput {
   }
 
   protected CompletableFuture<Void> resourceSelection(TurnContext turnContext) {
+    return chartNameSelection(turnContext);
+  }
+
+
+  protected CompletableFuture<Void> releaseNameSelection(TurnContext turnContext, String chartName) {
     String templateJSON;
     try {
-      templateJSON = getTemplateJson(Utils.FORM_ADAPTIVE_CARD_TEMPLATE);
+      templateJSON = getTemplateJson(Utils.RESOURCE_ADAPTIVE_CARD_TEMPLATE);
     } catch (IOException e) {
       e.printStackTrace();
       return Utils.sendMessage(turnContext, "Error while loading adaptive card.<br>" + e);
@@ -75,20 +83,46 @@ public class UserInput {
     }
 
     StringBuilder chartChoicesBuilder = new StringBuilder();
-    String[] chart_names = {"Chart1", "Chart2", "Chart3", "Chart4", "Chart5", "Chart6", "Chart7", "Chart8", "Chart9", "Chart10"};
+    List<String> releaseNames = resourceService.findByChartName(chartName);
+    for (String releaseName : releaseNames) {
+      if (chartChoicesBuilder.length() > 0) { chartChoicesBuilder.append(", "); }
+      chartChoicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", releaseName, releaseName));
+    }
+    String cardJSON = templateJSON.replaceFirst("\\{\\}", chartChoicesBuilder.toString());
+    cardJSON = cardJSON.replace("$(fieldName)", "Release Name:");
+    cardJSON = cardJSON.replace("$(cardName)", "releaseNameCard");
+
+    JsonNode content;
+    try { content = Serialization.jsonToTree(cardJSON); }
+    catch (IOException e) {
+      e.printStackTrace();
+      return Utils.sendMessage(turnContext, "Error while serializing adaptive card.<br>" + e);
+    }
+
+    return Utils.sendMessage(turnContext, getAdaptiveCardAttachment(content));
+  }
+
+  protected CompletableFuture<Void> chartNameSelection(TurnContext turnContext) {
+    String templateJSON;
+    try {
+      templateJSON = getTemplateJson(Utils.RESOURCE_ADAPTIVE_CARD_TEMPLATE);
+    } catch (IOException e) {
+      e.printStackTrace();
+      return Utils.sendMessage(turnContext, "Error while loading adaptive card.<br>" + e);
+    }
+    if (templateJSON == null) {
+      return Utils.sendMessage(turnContext, cardNotFoundMessage);
+    }
+
+    StringBuilder chartChoicesBuilder = new StringBuilder();
+    List<String> chart_names = chartNamesService.getAll();
     for (String chart_name : chart_names) {
       if (chartChoicesBuilder.length() > 0) { chartChoicesBuilder.append(", "); }
       chartChoicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", chart_name, chart_name));
     }
     String cardJSON = templateJSON.replaceFirst("\\{\\}", chartChoicesBuilder.toString());
-
-    StringBuilder releaseChoicesBuilder = new StringBuilder();
-    String[] release_names = {"Release1", "Release2", "Release3", "Release4", "Release5", "Release6", "Release7", "Release8", "Release9", "Release10"};
-    for (String release_name : release_names) {
-      if (releaseChoicesBuilder.length() > 0) { releaseChoicesBuilder.append(", "); }
-      releaseChoicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", release_name, release_name));
-    }
-    cardJSON = cardJSON.replaceFirst("\\{\\}", releaseChoicesBuilder.toString());
+    cardJSON = cardJSON.replace("$(fieldName)", "Chart Name:");
+    cardJSON = cardJSON.replace("$(cardName)", "chartNameCard");
 
     JsonNode content;
     try { content = Serialization.jsonToTree(cardJSON); }
