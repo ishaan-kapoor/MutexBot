@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resource Usage Calendar</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      #calendar {
+        max-width: 900px;
+        margin: 40px auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="calendar"></div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var calendarEl = document.getElementById("calendar");
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: "dayGridMonth",
+          headerToolbar: {
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,timeGridDay",
+          },
+          events: [],
+        });
+        calendar.render();
+
+        // Fetch and parse JSON logs
+        // fetch("logs.json")
+        //   .then((response) => response.json())
+        //   .then((data) => {
+        //     var events = data.map((log) => {
+        //       return {
+        //         title: log.user,
+        //         start: log.start,
+        //         end: log.end,
+        //       };
+        //     });
+        //     calendar.addEventSource(events);
+        //     calendar.render();
+        //   });
+      });
+    </script>
+  </body>
+</html>

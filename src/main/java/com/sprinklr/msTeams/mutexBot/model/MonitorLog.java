@@ -11,8 +11,8 @@ import com.sprinklr.msTeams.mutexBot.Utils;
 public class MonitorLog {
   @Id
   private String _id;
-  private String resource;
-  private String user;
+  public String resource;
+  public String user;
   public LocalDateTime start;
   public LocalDateTime end;
 

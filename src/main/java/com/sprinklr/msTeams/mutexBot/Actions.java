@@ -5,6 +5,7 @@ import com.microsoft.bot.builder.TurnContext;
 import com.microsoft.bot.builder.teams.TeamsInfo;
 import com.microsoft.bot.schema.Activity;
 import com.microsoft.bot.schema.teams.TeamsChannelAccount;
+import com.sprinklr.msTeams.mutexBot.model.MonitorLog;
 import com.sprinklr.msTeams.mutexBot.model.Resource;
 import com.sprinklr.msTeams.mutexBot.model.User;
 import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
@@ -14,9 +15,16 @@ import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 import com.sprinklr.msTeams.mutexBot.service.UserService;
 import com.sprinklr.msTeams.mutexBot.utils.UserTimeEntry;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -195,8 +203,63 @@ public class Actions {
       return Utils.sendMessage(turnContext, releaseResource(teamsUser, turnContext, resource, true));
     }
 
+    if (action.equals("resourcelog")) {
+      if (!exists) {
+        return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+      }
+    List<MonitorLog> logs = monitorLogService.getResourceLogs(resource_name);
+    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");//.withZone(ZoneOffset.UTC);
+
+      String message = logs.stream()
+      .map(log -> String.format("{\n  title: '%s',\n  start: '%s',\n  end: '%s'\n}",
+        log.user,
+        formatter.format(log.start.atOffset(ZoneOffset.UTC)),
+        formatter.format(log.end.atOffset(ZoneOffset.UTC))))
+      .collect(Collectors.joining(",\n      ", "[\n      ", "\n]"));
+
+      return sendReport(turnContext, message);
+    }
+
     return Utils.sendMessage(turnContext, "Invalid admin action: " + action);
   }
+
+  private CompletableFuture<Void> sendReport(TurnContext turnContext, String events) {
+    String template;
+    try {
+      template = userInput.getTemplateJson(Utils.REPORT_TEMPLATE);
+    } catch (IOException e) {
+      e.printStackTrace();
+      return Utils.sendMessage(turnContext, "Error while loading report template.<br>" + e);
+    }
+    if (template == null) {
+      return Utils.sendMessage(turnContext, "Report template not found");
+    }
+
+    // byte[] report;
+    // try {
+    //   report = template.replaceFirst("\\[\\]", events).getBytes();
+    // } catch (Exception e) {
+    //   e.printStackTrace();
+    //   return Utils.sendMessage(turnContext, "Error while converting report to byte array.<br>" + e);
+    // }
+    // Activity activity = getFileAttachmentActivity(turnContext, report, "report.html", turnContext.getActivity().getServiceUrl(), turnContext.getActivity().getConversation().getId());
+    // return Utils.sendMessage(turnContext, activity);
+    try {
+      FileWriter myWriter = new FileWriter("report.html");
+      myWriter.write(template.replaceFirst("\\[\\]", events));
+      myWriter.close();
+      System.out.println("Successfully wrote to the file.");
+    } catch (IOException e) {
+      System.out.println("An error occurred.");
+      e.printStackTrace();
+    }
+    return Utils.sendMessage(turnContext, "Saved as report.html");
+  }
+
+  private Activity getFileAttachmentActivity(TurnContext turnContext, byte[] fileContent, String fileName, String serviceUrl, String conversationId) {
+    return MessageFactory.text("Can't figure out how");
+  }
+
 
   protected CompletableFuture<Void> actOnResource(TurnContext turnContext, String resource_name, String action,
       Integer duration) {

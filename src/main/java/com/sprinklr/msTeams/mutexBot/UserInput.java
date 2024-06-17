@@ -158,14 +158,14 @@ public class UserInput {
     return Utils.sendMessage(turnContext, getAdaptiveCardAttachment(content));
   }
 
-  private Activity getAdaptiveCardAttachment(JsonNode content) {
+  protected Activity getAdaptiveCardAttachment(JsonNode content) {
     Attachment adaptiveCardAttachment = new Attachment();
     adaptiveCardAttachment.setContentType("application/vnd.microsoft.card.adaptive");
     adaptiveCardAttachment.setContent(content);
     return MessageFactory.attachment(adaptiveCardAttachment);
   }
 
-  private String getTemplateJson(String templatePath) throws IOException {
+  protected String getTemplateJson(String templatePath) throws IOException {
     InputStream inputStream = getClass().getResourceAsStream(templatePath);
     if (inputStream == null) { return null; }
     return IOUtils.toString(inputStream, StandardCharsets.UTF_8.toString());
