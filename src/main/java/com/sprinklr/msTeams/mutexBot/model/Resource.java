@@ -19,6 +19,7 @@ public class Resource {
   public String reservedBy;
   public LocalDateTime reservedTill;
   public List<UserTimeEntry> monitoredBy;
+  public int maxAllocationTime = 24*60;
 
   public Resource(String name) {
     this.name = name;

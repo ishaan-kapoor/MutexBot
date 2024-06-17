@@ -320,6 +320,10 @@ public class Actions {
           Utils.user2hyperlink(reservingUser, resource.getName()), Utils.time2hyperlink(resource.reservedTill)));
     }
 
+    if (resource.maxAllocationTime < duration) {
+      return MessageFactory.text(String.format("Duration can't be more than %d hours and %d minutes.", resource.maxAllocationTime / 60, resource.maxAllocationTime % 60));
+    }
+
     LocalDateTime reserveTill = LocalDateTime.now().plusMinutes(duration);
     resource.reserve(user.getId(), reserveTill);
     resource.clean_monitor_list();
