@@ -14,30 +14,32 @@ import java.util.List;
 @Service
 public class MonitorLogService {
 
-  private final MonitorLogRepository monitorLogRepository;
+  private final MonitorLogRepository repo;
 
   @Autowired
   public MonitorLogService(MonitorLogRepository monitorLogRepository) {
-    this.monitorLogRepository = monitorLogRepository;
+    this.repo = monitorLogRepository;
   }
 
   public MonitorLog getLatest(String resource, String user) {
     Pageable pageable = PageRequest.of(0, 1);
-    List<MonitorLog> log = monitorLogRepository.getLatest(resource, user, pageable);
+    List<MonitorLog> log = repo.getLatest(resource, user, pageable);
     return log.isEmpty() ? null : log.get(0);
   }
 
   public List<MonitorLog> getLogs(String resource, String user) {
-    return monitorLogRepository.getLogs(resource, user);
+    if (user == null) { return getResourceLogs(resource); }
+    if (resource == null) { return getUserLogs(user); }
+    return repo.getLogs(resource, user);
   }
 
   public List<MonitorLog> getResourceLogs(String resource) {
-    return monitorLogRepository.getResourceLogs(resource);
+    return repo.getResourceLogs(resource);
   }
 
   public void monitor(String resource, String user, LocalDateTime end) {
     MonitorLog log = new MonitorLog(resource, user, LocalDateTime.now(), end);
-    monitorLogRepository.save(log);
+    repo.save(log);
   }
 
   public void stopMonitoring(String resource, String user) {
@@ -45,10 +47,10 @@ public class MonitorLogService {
     if (log == null) { return; }
     if (log.end.isBefore(LocalDateTime.now())) { return; }
     log.end = LocalDateTime.now();
-    monitorLogRepository.save(log);
+    repo.save(log);
   }
 
   public List<MonitorLog> getUserLogs(String user) {
-    return monitorLogRepository.getUserLogs(user);
+    return repo.getUserLogs(user);
   }
 }

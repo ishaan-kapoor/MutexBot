@@ -64,12 +64,8 @@ public class TeamsConversationBot extends TeamsActivityHandler {
       if (card != null) {
         if (card.equals("durationCard")) {
           return actions.handleDurationCard(turnContext, data);
-        } else if (card.equals("resourceCard")) {
-          return actions.handleResourceCard(turnContext, data);
         } else if (card.equals("adminActionsCard")) {
           return actions.handleAdminActionsCard(turnContext, data);
-        } else if (card.equals("resourceFormCard")) {
-          return actions.handleResourceFormCard(turnContext, data);
         } else if (card.equals("chartNameCard")) {
           return actions.handleChartNameCard(turnContext, data);
         } else if (card.equals("releaseNameCard")) {

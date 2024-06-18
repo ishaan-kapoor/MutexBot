@@ -5,7 +5,6 @@ import com.microsoft.bot.builder.TurnContext;
 import com.microsoft.bot.builder.teams.TeamsInfo;
 import com.microsoft.bot.schema.Activity;
 import com.microsoft.bot.schema.teams.TeamsChannelAccount;
-import com.sprinklr.msTeams.mutexBot.model.MonitorLog;
 import com.sprinklr.msTeams.mutexBot.model.Resource;
 import com.sprinklr.msTeams.mutexBot.model.User;
 import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
@@ -15,16 +14,9 @@ import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 import com.sprinklr.msTeams.mutexBot.service.UserService;
 import com.sprinklr.msTeams.mutexBot.utils.UserTimeEntry;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.Base64;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -129,30 +121,37 @@ public class Actions {
       return Utils.sendMessage(turnContext, "Only admins can perform this action");
     }
 
+    User argUser = userService.findByEmail(resource_name);
+
     if (action.equals("makeadmin")) {
-      User newUser = userService.findByEmail(resource_name);
-      if (newUser == null) {
+      if (argUser == null) {
         return Utils.sendMessage(turnContext, "User not found");
       }
-      if (newUser.isAdmin()) {
-        return Utils.sendMessage(turnContext, String.format("%s is alredy admin.", Utils.user2hyperlink(newUser)));
+      if (argUser.isAdmin()) {
+        return Utils.sendMessage(turnContext, String.format("%s is already admin.", Utils.user2hyperlink(argUser)));
       }
-      newUser.makeAdmin();
-      userService.save(newUser);
-      return Utils.sendMessage(turnContext, String.format("%s is now an admin", Utils.user2hyperlink(newUser)));
+      argUser.makeAdmin();
+      userService.save(argUser);
+      return Utils.sendMessage(turnContext, String.format("%s is now an admin", Utils.user2hyperlink(argUser)));
     }
 
     if (action.equals("dismissadmin")) {
-      User newUser = userService.findByEmail(resource_name);
-      if (newUser == null) {
+      if (argUser == null) {
         return Utils.sendMessage(turnContext, "User not found");
       }
-      if (!newUser.isAdmin()) {
-        return Utils.sendMessage(turnContext, String.format("%s was not admin.", Utils.user2hyperlink(newUser)));
+      if (!argUser.isAdmin()) {
+        return Utils.sendMessage(turnContext, String.format("%s was not admin.", Utils.user2hyperlink(argUser)));
       }
-      newUser.dismissAdmin();
-      userService.save(newUser);
-      return Utils.sendMessage(turnContext, String.format("%s is now dismissed as admin", Utils.user2hyperlink(newUser)));
+      argUser.dismissAdmin();
+      userService.save(argUser);
+      return Utils.sendMessage(turnContext, String.format("%s is now dismissed as admin", Utils.user2hyperlink(argUser)));
+    }
+
+    if (action.equals("userlog")) {
+      if (argUser == null) {
+        return Utils.sendMessage(turnContext, "User not found");
+      }
+      return Utils.sendMessage(turnContext, "[report]("+Utils.URL+"logs/?perspective=user&user="+argUser.getId()+")");
     }
 
     boolean exists = chartNameService.exists(resource_name);
@@ -207,59 +206,11 @@ public class Actions {
       if (!exists) {
         return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
       }
-    List<MonitorLog> logs = monitorLogService.getResourceLogs(resource_name);
-    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");//.withZone(ZoneOffset.UTC);
-
-      String message = logs.stream()
-      .map(log -> String.format("{\n  title: '%s',\n  start: '%s',\n  end: '%s'\n}",
-        log.user,
-        formatter.format(log.start.atOffset(ZoneOffset.UTC)),
-        formatter.format(log.end.atOffset(ZoneOffset.UTC))))
-      .collect(Collectors.joining(",\n      ", "[\n      ", "\n]"));
-
-      return sendReport(turnContext, message);
+      return Utils.sendMessage(turnContext, "[report]("+Utils.URL+"logs/?perspective=resource&resource="+resource_name+")");
     }
 
     return Utils.sendMessage(turnContext, "Invalid admin action: " + action);
   }
-
-  private CompletableFuture<Void> sendReport(TurnContext turnContext, String events) {
-    String template;
-    try {
-      template = userInput.getTemplateJson(Utils.REPORT_TEMPLATE);
-    } catch (IOException e) {
-      e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Error while loading report template.<br>" + e);
-    }
-    if (template == null) {
-      return Utils.sendMessage(turnContext, "Report template not found");
-    }
-
-    // byte[] report;
-    // try {
-    //   report = template.replaceFirst("\\[\\]", events).getBytes();
-    // } catch (Exception e) {
-    //   e.printStackTrace();
-    //   return Utils.sendMessage(turnContext, "Error while converting report to byte array.<br>" + e);
-    // }
-    // Activity activity = getFileAttachmentActivity(turnContext, report, "report.html", turnContext.getActivity().getServiceUrl(), turnContext.getActivity().getConversation().getId());
-    // return Utils.sendMessage(turnContext, activity);
-    try {
-      FileWriter myWriter = new FileWriter("report.html");
-      myWriter.write(template.replaceFirst("\\[\\]", events));
-      myWriter.close();
-      System.out.println("Successfully wrote to the file.");
-    } catch (IOException e) {
-      System.out.println("An error occurred.");
-      e.printStackTrace();
-    }
-    return Utils.sendMessage(turnContext, "Saved as report.html");
-  }
-
-  private Activity getFileAttachmentActivity(TurnContext turnContext, byte[] fileContent, String fileName, String serviceUrl, String conversationId) {
-    return MessageFactory.text("Can't figure out how");
-  }
-
 
   protected CompletableFuture<Void> actOnResource(TurnContext turnContext, String resource_name, String action,
       Integer duration) {

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Resource Usage Calendar</title>
+    <title>Log Calendar</title>
     <link
       href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css"
       rel="stylesheet"
@@ -19,14 +19,33 @@
         max-width: 900px;
         margin: 40px auto;
       }
+      #filter-buttons {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .filter-button {
+        margin: 0 5px;
+        padding: 10px 20px;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
+    <div id="filter-buttons">
+      <button id="show-all" class="filter-button">Show All</button>
+      <button id="show-reservation" class="filter-button">Show Reservation</button>
+      <button id="show-monitor" class="filter-button">Show Monitor</button>
+    </div>
+
     <div id="calendar"></div>
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         var calendarEl = document.getElementById("calendar");
+
+        var reservationEvents = [];
+
+        var monitorEvents = [];
 
         var calendar = new FullCalendar.Calendar(calendarEl, {
           initialView: "dayGridMonth",
@@ -35,25 +54,34 @@
             center: "title",
             right: "dayGridMonth,timeGridWeek,timeGridDay",
           },
-          events: [],
+          events: [...reservationEvents, ...monitorEvents],
         });
+
         calendar.render();
 
-        // Fetch and parse JSON logs
-        // fetch("logs.json")
-        //   .then((response) => response.json())
-        //   .then((data) => {
-        //     var events = data.map((log) => {
-        //       return {
-        //         title: log.user,
-        //         start: log.start,
-        //         end: log.end,
-        //       };
-        //     });
-        //     calendar.addEventSource(events);
-        //     calendar.render();
-        //   });
+        document
+          .getElementById("show-all")
+          .addEventListener("click", function () {
+            calendar.removeAllEventSources();
+            calendar.addEventSource(reservationEvents);
+            calendar.addEventSource(monitorEvents);
+          });
+
+        document
+          .getElementById("show-reservation")
+          .addEventListener("click", function () {
+            calendar.removeAllEventSources();
+            calendar.addEventSource(reservationEvents);
+          });
+
+        document
+          .getElementById("show-monitor")
+          .addEventListener("click", function () {
+            calendar.removeAllEventSources();
+            calendar.addEventSource(monitorEvents);
+          });
       });
     </script>
+
   </body>
 </html>
