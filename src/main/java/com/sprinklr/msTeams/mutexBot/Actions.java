@@ -154,7 +154,7 @@ public class Actions {
       if (argUser == null) {
         return Utils.sendMessage(turnContext, "User not found");
       }
-      return Utils.sendMessage(turnContext, "[report]("+Utils.URL+"logs/?perspective=user&user="+argUser.getId()+")");
+      return Utils.sendMessage(turnContext, "[Report for user: ]("+Utils.URL+"logs/?perspective=user&user="+argUser.getId()+")" + Utils.user2hyperlink(argUser));
     }
 
     boolean exists = chartNameService.exists(resource_name);
@@ -211,7 +211,7 @@ public class Actions {
       if (!exists) {
         return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
       }
-      return Utils.sendMessage(turnContext, "[report]("+Utils.URL+"logs/?perspective=resource&resource="+resource_name+")");
+      return Utils.sendMessage(turnContext, "[Report for resource: ]("+Utils.URL+"logs/?perspective=resource&resource="+resource_name+")"+resource_name);
     }
 
     return Utils.sendMessage(turnContext, "Invalid admin action: " + action);

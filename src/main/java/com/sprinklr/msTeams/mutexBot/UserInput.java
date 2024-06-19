@@ -57,6 +57,12 @@ public class UserInput {
     adminButton.setText("admin");
     buttons.add(adminButton);
 
+    CardAction listAdminButton = new CardAction();
+    listAdminButton.setType(ActionTypes.MESSAGE_BACK);
+    listAdminButton.setTitle("List all Admins");
+    listAdminButton.setText("listAdmins");
+    buttons.add(listAdminButton);
+
     HeroCard card = new HeroCard();
     card.setButtons(buttons);
     card.setTitle("Welcome!");

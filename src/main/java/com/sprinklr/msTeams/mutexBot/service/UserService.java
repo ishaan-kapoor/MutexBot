@@ -2,11 +2,13 @@ package com.sprinklr.msTeams.mutexBot.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.microsoft.bot.schema.ChannelAccount;
+import com.sprinklr.msTeams.mutexBot.Utils;
 import com.sprinklr.msTeams.mutexBot.model.User;
 import com.sprinklr.msTeams.mutexBot.repositories.UserRepository;
 
@@ -58,6 +60,12 @@ public class UserService {
 
   public void save(User user) {
     repo.save(user);
+  }
+
+  public String listAdmins() {
+    return repo.findByAdminTrue().stream()
+        .map(user -> Utils.user2hyperlink(user))
+        .collect(Collectors.joining("<br>"));
   }
 
 }
