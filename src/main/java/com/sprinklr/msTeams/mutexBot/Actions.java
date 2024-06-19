@@ -66,6 +66,9 @@ public class Actions {
       }
     }
 
+    if (!resourceService.exists(resource_name)) {
+      return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+    }
     if (action.equals("*")) {
       return userInput.actionSelection(turnContext, resource_name);
     } else if ((action.equals("reserve")) || action.equals("monitor")) {
