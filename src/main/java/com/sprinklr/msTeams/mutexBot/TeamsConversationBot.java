@@ -85,7 +85,7 @@ public class TeamsConversationBot extends TeamsActivityHandler {
       return userInput.resourceSelection(turnContext);
     } else if ((message_array.length == 1) && (message.toLowerCase().equals("admin"))) {
       return userInput.adminActionSelection(turnContext);
-    } else if ((message_array.length == 1) && ( (message.toLowerCase().equals("hello")) || (message.toLowerCase().equals("hi")) )) {
+    } else if ((message_array.length == 1) && ( (message.toLowerCase().startsWith("hello")) || (message.toLowerCase().equals("hi")) )) {
       return Utils.sendMessage(turnContext, userInput.welcomeCard());
     } else if (message_array.length == 2) {
       return actions.actOnResource(turnContext, message_array[1], message_array[0].toLowerCase());
