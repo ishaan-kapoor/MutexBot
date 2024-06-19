@@ -31,6 +31,7 @@ public class Actions {
   private ReservationLogService reservationLogService;
   private MonitorLogService monitorLogService;
   private ChartNameService chartNameService;
+  private final static Object mutex = new Object();
 
   public Actions(ResourceService resourceService, UserService userService, ReservationLogService reservationLogService, MonitorLogService monitorLogService, ChartNameService chartNameService, UserInput userInput,
       @Value("${MicrosoftAppId}") String appId, @Value("${MicrosoftAppPassword}") String appPassword) {
@@ -65,17 +66,6 @@ public class Actions {
       }
     }
 
-    Resource resource;
-    try {
-      resource = resourceService.find(resource_name);
-    } catch (Exception e) {
-      e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Exception while fetching resource.");
-    }
-    if (resource == null) {
-      return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
-    }
-
     if (action.equals("*")) {
       return userInput.actionSelection(turnContext, resource_name);
     } else if ((action.equals("reserve")) || action.equals("monitor")) {
@@ -88,14 +78,27 @@ public class Actions {
     }
 
     Activity response;
-    if (action.equals("release")) {
-      response = releaseResource(user, turnContext, resource);
-    } else if (action.equals("stopmonitoring")) {
-      response = stopMonitoringResource(user, resource);
-    } else if (action.equals("status")) {
-      response = getStatus(resource);
-    } else {
-      response = MessageFactory.text(String.format(Utils.UNSURE_ACTION_MESSAGE, resource_name, action));
+    synchronized (mutex) {
+      Resource resource;
+      try {
+        resource = resourceService.find(resource_name);
+      } catch (Exception e) {
+        e.printStackTrace();
+        return Utils.sendMessage(turnContext, "Exception while fetching resource.");
+      }
+      if (resource == null) {
+        return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+      }
+
+      if (action.equals("release")) {
+        response = releaseResource(user, turnContext, resource);
+      } else if (action.equals("stopmonitoring")) {
+        response = stopMonitoringResource(user, resource);
+      } else if (action.equals("status")) {
+        response = getStatus(resource);
+      } else {
+        response = MessageFactory.text(String.format(Utils.UNSURE_ACTION_MESSAGE, resource_name, action));
+      }
     }
     return Utils.sendMessage(turnContext, response);
   }
@@ -171,35 +174,37 @@ public class Actions {
       return Utils.sendMessage(turnContext, "Chart name \"" + resource_name + "\" deleted successfully.");
     }
 
-    exists = resourceService.exists(resource_name);
-    if (action.equals("createresource")) {
-      if (exists) {
-        return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" already exists.");
+    synchronized (mutex) {
+      exists = resourceService.exists(resource_name);
+      if (action.equals("createresource")) {
+        if (exists) {
+          return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" already exists.");
+        }
+        resourceService.save(new Resource(resource_name));
+        return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" created successfully.");
       }
-      resourceService.save(new Resource(resource_name));
-      return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" created successfully.");
-    }
 
-    if (action.equals("deleteresource")) {
-      if (!exists) {
-        return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+      if (action.equals("deleteresource")) {
+        if (!exists) {
+          return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+        }
+        resourceService.delete(resource_name);
+        return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" deleted successfully.");
       }
-      resourceService.delete(resource_name);
-      return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" deleted successfully.");
-    }
 
-    if (action.equals("forcerelease")) {
-      Resource resource;
-      try {
-        resource = resourceService.find(resource_name);
-      } catch (Exception e) {
-        e.printStackTrace();
-        return Utils.sendMessage(turnContext, "Exception while fetching resource.");
+      if (action.equals("forcerelease")) {
+        Resource resource;
+        try {
+          resource = resourceService.find(resource_name);
+        } catch (Exception e) {
+          e.printStackTrace();
+          return Utils.sendMessage(turnContext, "Exception while fetching resource.");
+        }
+        if (resource == null) {
+          return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+        }
+        return Utils.sendMessage(turnContext, releaseResource(teamsUser, turnContext, resource, true));
       }
-      if (resource == null) {
-        return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
-      }
-      return Utils.sendMessage(turnContext, releaseResource(teamsUser, turnContext, resource, true));
     }
 
     if (action.equals("resourcelog")) {
@@ -214,17 +219,6 @@ public class Actions {
 
   protected CompletableFuture<Void> actOnResource(TurnContext turnContext, String resource_name, String action,
       Integer duration) {
-    Resource resource;
-    try {
-      resource = resourceService.find(resource_name);
-    } catch (Exception e) {
-      e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Exception while fetching resource.");
-    }
-    if (resource == null) {
-      return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
-    }
-
     TeamsChannelAccount user = TeamsInfo.getMember(turnContext, turnContext.getActivity().getFrom().getId()).join();
     if (!userService.exists(user)) {
       userService.save(new User(user));
@@ -235,12 +229,25 @@ public class Actions {
     }
 
     Activity response;
-    if (action.equals("reserve")) {
-      response = reserveResource(user, turnContext, resource, duration);
-    } else if (action.equals("monitor")) {
-      response = monitorResource(user, resource, duration);
-    } else {
-      response = MessageFactory.text(String.format(Utils.UNSURE_ACTION_MESSAGE, resource_name, action));
+    synchronized (mutex) {
+      Resource resource;
+      try {
+        resource = resourceService.find(resource_name);
+      } catch (Exception e) {
+        e.printStackTrace();
+        return Utils.sendMessage(turnContext, "Exception while fetching resource.");
+      }
+      if (resource == null) {
+        return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" not found.");
+      }
+
+      if (action.equals("reserve")) {
+        response = reserveResource(user, turnContext, resource, duration);
+      } else if (action.equals("monitor")) {
+        response = monitorResource(user, resource, duration);
+      } else {
+        response = MessageFactory.text(String.format(Utils.UNSURE_ACTION_MESSAGE, resource_name, action));
+      }
     }
     return Utils.sendMessage(turnContext, response);
   }
