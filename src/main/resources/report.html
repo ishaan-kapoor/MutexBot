@@ -13,7 +13,7 @@
       body {
         font-family: Arial, sans-serif;
         margin: 0;
-        padding: 0;
+        padding: 1rem;
       }
       #calendar {
         max-width: 900px;
@@ -22,11 +22,32 @@
       #filter-buttons {
         text-align: center;
         margin-bottom: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #filter-buttons > button:first-child {
+        border-radius: 0.25rem;
+        border-bottom-right-radius: 0;
+        border-top-right-radius: 0;
+      }
+      #filter-buttons > button:last-child {
+        border-radius: 0.25rem;
+        border-bottom-left-radius: 0;
+        border-top-left-radius: 0;
       }
       .filter-button {
-        margin: 0 5px;
+        margin: 0;
         padding: 10px 20px;
         cursor: pointer;
+
+        border: none;
+        background-color: var(--fc-button-bg-color,#2C3E50);
+        border-color: var(--fc-button-border-color,#2C3E50);
+        color: white;
+      }
+      .filter-button.selected {
+        background-color: var(--fc-button-active-bg-color,#1a252f);
       }
       .fc-event.reservation {
         background-color: blue;
@@ -42,7 +63,7 @@
   </head>
   <body>
     <div id="filter-buttons">
-      <button id="show-all" class="filter-button">Show All</button>
+      <button id="show-all" class="filter-button selected">Show All</button>
       <button id="show-reservation" class="filter-button">Show Reservation</button>
       <button id="show-monitor" class="filter-button">Show Monitor</button>
     </div>
@@ -87,6 +108,10 @@
             calendar.removeAllEventSources();
             calendar.addEventSource(reservationEvents);
             calendar.addEventSource(monitorEvents);
+
+            const y = document.querySelector(".filter-button.selected");
+            if(y) y.classList.remove("selected");
+            this.classList.add("selected");
           });
 
         document
@@ -94,6 +119,10 @@
           .addEventListener("click", function () {
             calendar.removeAllEventSources();
             calendar.addEventSource(reservationEvents);
+
+            const y = document.querySelector(".filter-button.selected");
+            if(y) y.classList.remove("selected");
+            this.classList.add("selected");
           });
 
         document
@@ -101,6 +130,10 @@
           .addEventListener("click", function () {
             calendar.removeAllEventSources();
             calendar.addEventSource(monitorEvents);
+
+            const y = document.querySelector(".filter-button.selected");
+            if(y) y.classList.remove("selected");
+            this.classList.add("selected");
           });
       });
     </script>
