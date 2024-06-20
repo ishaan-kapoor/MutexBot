@@ -92,10 +92,10 @@ public class UserInput {
     List<String> releaseNames = resourceService.findByChartName(chartName);
     for (String releaseName : releaseNames) {
       if (chartChoicesBuilder.length() > 0) { chartChoicesBuilder.append(", "); }
-      chartChoicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", releaseName, releaseName));
+      chartChoicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", releaseName.substring(chartName.length()+1), releaseName));
     }
     String cardJSON = templateJSON.replaceFirst("\\{\\}", chartChoicesBuilder.toString());
-    cardJSON = cardJSON.replace("$(fieldName)", "Resource Name:");
+    cardJSON = cardJSON.replace("$(fieldName)", "Release Name (for '" + chartName + "'):");
     cardJSON = cardJSON.replace("$(cardName)", "releaseNameCard");
 
     JsonNode content;

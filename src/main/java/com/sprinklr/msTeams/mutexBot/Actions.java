@@ -183,7 +183,7 @@ public class Actions {
         if (exists) {
           return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" already exists.");
         }
-        resourceService.save(new Resource(resource_name));
+        resourceService.save(resource_name);
         return Utils.sendMessage(turnContext, "Resource \"" + resource_name + "\" created successfully.");
       }
 
