@@ -62,6 +62,13 @@ public class ResourceService {
     return repo.findAll();
   }
 
+  public List<String> getAllNames() {
+    incrementAccessCount();
+    return repo.findAll().stream()
+        .map(Resource::getName)
+        .collect(Collectors.toList());
+  }
+
   public List<Resource> getReserved() {
     incrementAccessCount();
     return repo.findReservedResources(LocalDateTime.now());
