@@ -26,7 +26,6 @@ import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -115,7 +114,6 @@ public class HelmCharts {
         System.err.println("Invalid uri: " + url);
         return Optional.empty();
       }
-
       HttpRequest request = HttpRequest.newBuilder().uri(uri).header("PRIVATE-TOKEN", privateToken).build();
 
       try {
@@ -151,14 +149,10 @@ public class HelmCharts {
     Set<String> dbResources = new HashSet<String>(resourceService.getAllNames());
     Set<String> newResources = new HashSet<String>(resourceNames);
     newResources.removeAll(dbResources);
-    System.out.println("Identified new resources");
     newResources.forEach(resourceName -> resourceService.save(resourceName));
-    System.out.println("Saved new resources");
     Set<String> deletedResources = new HashSet<String>(dbResources);
     deletedResources.removeAll(resourceNames);
-    System.out.println("Identified deleted resources");
     deletedResources.forEach(resourceName -> resourceService.delete(resourceName));
-    System.out.println("Deleted resources");
 
     Set<String> dbCharts = new HashSet<String>(chartNameService.getAll());
     Set<String> newCharts = new HashSet<String>(chartNames);

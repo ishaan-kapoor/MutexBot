@@ -18,6 +18,7 @@ import com.sprinklr.msTeams.mutexBot.utils.UserTimeEntry;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -31,8 +32,10 @@ public class Actions {
   private ReservationLogService reservationLogService;
   private MonitorLogService monitorLogService;
   private ChartNameService chartNameService;
+  private HelmCharts helmConnector;
   private final static Object mutex = new Object();
 
+  @Autowired
   public Actions(
       ResourceService resourceService,
       UserService userService,
@@ -40,6 +43,7 @@ public class Actions {
       MonitorLogService monitorLogService,
       ChartNameService chartNameService,
       UserInput userInput,
+      HelmCharts helmConnector,
       @Value("${MicrosoftAppId}") String appId,
       @Value("${MicrosoftAppPassword}") String appPassword) {
     this.resourceService = resourceService;
@@ -48,6 +52,7 @@ public class Actions {
     this.reservationLogService = reservationLogService;
     this.monitorLogService = monitorLogService;
     this.chartNameService = chartNameService;
+    this.helmConnector = helmConnector;
     this.appId = appId;
     this.appPassword = appPassword;
   }
@@ -123,6 +128,15 @@ public class Actions {
     }
     if (!user.isAdmin()) {
       return MessageFactory.text("Only admins can perform this action");
+    }
+
+    if (resource_name.toLowerCase().equals("db")) {
+      Utils.sendMessage(turnContext, "Started syncing DB with HelmCharts.<br>This is a long process, please wait...");
+      helmConnector.syncDB();
+      return MessageFactory.text("synced DB with HelmCharts");
+    } else if (resource_name.toLowerCase().equals("cache")) {
+      resourceService.refreshCache();
+      return MessageFactory.text("synced cache with DB");
     }
 
     User argUser = userService.findByEmail(resource_name);

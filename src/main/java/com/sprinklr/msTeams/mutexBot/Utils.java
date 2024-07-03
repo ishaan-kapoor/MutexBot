@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 public class Utils {
 
   public static final String[] actions = { "Reserve", "Release", "Status", "Monitor", "StopMonitoring" };
-  public static final String[] adminActions = { "createResource", "deleteResource", "makeAdmin", "dismissAdmin", "forceRelease", "createChartName", "deleteChartName", "resourceLog", "userLog" };
+  public static final String[] adminActions = { "createResource", "deleteResource", "makeAdmin", "dismissAdmin", "forceRelease", "createChartName", "deleteChartName", "resourceLog", "userLog", "sync" };
   public static DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss (dd/MM/yyyy)");
   public static final String DURATION_ADAPTIVE_CARD_TEMPLATE = "/duration.json";
   public static final String ADMIN_ACTIONS_ADAPTIVE_CARD_TEMPLATE = "/adminActions.json";
