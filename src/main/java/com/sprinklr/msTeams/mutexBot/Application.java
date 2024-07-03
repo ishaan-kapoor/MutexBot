@@ -42,8 +42,8 @@ public class Application extends BotDependencyConfiguration {
    * @return The Bot implementation for this application.
    */
   @Bean
-  public TeamsConversationBot getBot(UserService userService, UserInput userInput, Actions actions) {
-    return new TeamsConversationBot(userService, userInput, actions);
+  public MutexBot getBot(UserService userService, UserInput userInput, Actions actions) {
+    return new MutexBot(userService, userInput, actions);
   }
 
   /**

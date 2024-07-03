@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.5/MicrosoftTeams.schema.json",
   "manifestVersion": "1.5",
-  "version": "0.1",
+  "version": "1.0",
   "id": "f01bd7fd-054a-422e-ba08-3ae85fa0e624",
   "packageName": "com.sprinklr.msTeams.mutexBot",
   "developer": {
