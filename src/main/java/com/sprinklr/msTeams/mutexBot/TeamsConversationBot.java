@@ -8,10 +8,6 @@ import com.microsoft.bot.schema.teams.TeamInfo;
 import com.microsoft.bot.schema.teams.TeamsChannelAccount;
 
 import com.sprinklr.msTeams.mutexBot.model.User;
-import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
-import com.sprinklr.msTeams.mutexBot.service.MonitorLogService;
-import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
-import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 import com.sprinklr.msTeams.mutexBot.service.UserService;
 
 import java.util.List;
@@ -19,39 +15,20 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 public class TeamsConversationBot extends TeamsActivityHandler {
-  private final String appId;
-  private final String appPassword;
-  private final ResourceService resourceService;
   private final UserService userService;
-  private final ReservationLogService reservationLogService;
-  private final MonitorLogService monitorLogService;
-  private final ChartNameService chartNameService;
   private final UserInput userInput;
   private final Actions actions;
   private final static String helpMessage = "Commands:<br> &emsp;Reserve \\<Resource\\> [for \\<Duration\\>]<br> &emsp;Release \\<Resource\\><br> &emsp;Status \\<Resource\\><br> &emsp;Monitor \\<Resource\\> [for \\<Duration\\>]<br> &emsp;StopMonitoring \\<Resource\\><br>e.g.<br> &emsp;Reserve prod:qa6 for 1h12m<br> &emsp;StopMonitoring dev:qa6<br><br>Admin only commands:<br> &emsp;CreateResource \\<Resource\\><br> &emsp;DeleteResource \\<Resource\\><br> &emsp;CreateChartName \\<ChartName\\><br> &emsp;DeleteChartName \\<ChartName\\><br> &emsp;ForceRelease \\<Resource\\><br> &emsp;MakeAdmin \\<User Email\\><br> &emsp;DismissAdmin \\<User Email\\><br> &emsp;ResourceLog \\<Resource\\><br> &emsp;UserLog \\<User Email\\><br><br><hr>Send \"Hello\" for welcome card.<br>Send \"run\" to select a resource.";
 
   @Autowired
   public TeamsConversationBot(
-      @Value("${MicrosoftAppId}") String appId,
-      @Value("${MicrosoftAppPassword}") String appPassword,
-      ResourceService resourceService,
       UserService userService,
       UserInput userInput,
-      ReservationLogService reservationLogService,
-      MonitorLogService monitorLogService,
-      ChartNameService chartNameService,
       Actions actions) {
-    this.appId = appId;
-    this.appPassword = appPassword;
-    this.resourceService = resourceService;
     this.userService = userService;
     this.userInput = userInput;
-    this.reservationLogService = reservationLogService;
-    this.monitorLogService = monitorLogService;
-    this.chartNameService = chartNameService;
     this.actions = actions;
   }
 

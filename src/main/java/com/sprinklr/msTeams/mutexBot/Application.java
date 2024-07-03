@@ -6,13 +6,8 @@ import com.microsoft.bot.integration.Configuration;
 import com.microsoft.bot.integration.spring.BotController;
 import com.microsoft.bot.integration.spring.BotDependencyConfiguration;
 
-import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
-import com.sprinklr.msTeams.mutexBot.service.MonitorLogService;
-import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
-import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 import com.sprinklr.msTeams.mutexBot.service.UserService;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -47,19 +42,8 @@ public class Application extends BotDependencyConfiguration {
    * @return The Bot implementation for this application.
    */
   @Bean
-  public TeamsConversationBot getBot(
-      @Value("${MicrosoftAppId}") String appId,
-      @Value("${MicrosoftAppPassword}") String appPassword,
-      ResourceService resourceService,
-      UserService userService,
-      UserInput userInput,
-      ReservationLogService reservationLogService,
-      MonitorLogService monitorLogService,
-      ChartNameService chartNameService,
-      Actions actions) {
-    return new TeamsConversationBot(
-        appId, appPassword, resourceService, userService, userInput, reservationLogService, monitorLogService,
-        chartNameService, actions);
+  public TeamsConversationBot getBot(UserService userService, UserInput userInput, Actions actions) {
+    return new TeamsConversationBot(userService, userInput, actions);
   }
 
   /**
