@@ -1,7 +1,9 @@
 package com.sprinklr.msTeams.mutexBot;
 
+import com.microsoft.bot.builder.MessageFactory;
 import com.microsoft.bot.builder.TurnContext;
 import com.microsoft.bot.builder.teams.TeamsActivityHandler;
+import com.microsoft.bot.schema.Activity;
 import com.microsoft.bot.schema.teams.TeamInfo;
 import com.microsoft.bot.schema.teams.TeamsChannelAccount;
 
@@ -56,6 +58,7 @@ public class TeamsConversationBot extends TeamsActivityHandler {
   @Override
   protected CompletableFuture<Void> onMessageActivity(TurnContext turnContext) {
     turnContext.getActivity().removeRecipientMention();
+    Activity response;
 
     // Check if the message is a card respose
     if (turnContext.getActivity().getText() == null) {
@@ -63,56 +66,46 @@ public class TeamsConversationBot extends TeamsActivityHandler {
       String card = (String) data.get("card");
       if (card != null) {
         if (card.equals("durationCard")) {
-          return actions.handleDurationCard(turnContext, data);
+          response = actions.handleDurationCard(turnContext, data);
         } else if (card.equals("adminActionsCard")) {
-          return actions.handleAdminActionsCard(turnContext, data);
+          response = actions.handleAdminActionsCard(turnContext, data);
         } else if (card.equals("chartNameCard")) {
-          return actions.handleChartNameCard(turnContext, data);
+          response = actions.handleChartNameCard(turnContext, data);
         } else if (card.equals("releaseNameCard")) {
-          return actions.handleReleaseNameCard(turnContext, data);
+          response = actions.handleReleaseNameCard(turnContext, data);
+        } else {
+          response = MessageFactory.text("Received unknown card: " + card);
         }
+      } else {
+        response = MessageFactory.text("No message recieved.");
       }
-      return Utils.sendMessage(turnContext, "No message recieved.");
+      return Utils.sendMessage(turnContext,response);
     }
 
     String message = turnContext.getActivity().getText().trim().replaceAll(" +", " ");
     String[] message_array = message.split(" ");
     if (message_array.length == 0) {
-      return Utils.sendMessage(turnContext, "Something went wrong.");
+      response = MessageFactory.text("Something went wrong.");
     } else if ((message_array.length == 1) && (message.toLowerCase().equals("help"))) {
-      return Utils.sendMessage(turnContext, helpMessage);
+      response = MessageFactory.text(helpMessage);
     } else if ((message_array.length == 1) && (message.toLowerCase().equals("run"))) {
-      return userInput.resourceSelection(turnContext);
+      response = userInput.resourceSelection(turnContext);
     } else if ((message_array.length == 1) && (message.toLowerCase().equals("admin"))) {
-      return userInput.adminActionSelection(turnContext);
+      response = userInput.adminActionSelection();
     } else if ((message_array.length == 1) && (message.toLowerCase().equals("listadmins"))) {
-      return Utils.sendMessage(turnContext, "Admins:<br><br>"+userService.listAdmins()+"<hr>");
+      response = MessageFactory.text("Admins:<br><br>"+userService.listAdmins()+"<hr>");
     } else if ((message_array.length == 1) && ( (message.toLowerCase().startsWith("hello")) || (message.toLowerCase().equals("hi")) )) {
-      return Utils.sendMessage(turnContext, userInput.welcomeCard());
+      response = userInput.welcomeCard();
     } else if (message_array.length == 2) {
-      return actions.actOnResource(turnContext, message_array[1], message_array[0].toLowerCase());
+      response = actions.actOnResource(turnContext, message_array[1], message_array[0].toLowerCase());
     } else if (message_array.length == 4) {
-      return actions.actOnResource(turnContext, message_array[1], message_array[0].toLowerCase(),
+      response = actions.actOnResource(turnContext, message_array[1], message_array[0].toLowerCase(),
           Utils.timeString2Int(message_array[3].toLowerCase()));
+    } else {
+      Utils.sendMessage(turnContext, "Invalid message recieved:<br>" + message);
+      response = userInput.welcomeCard();
     }
-    Utils.sendMessage(turnContext, "Invalid message recieved:<br>" + message);
-    return Utils.sendMessage(turnContext, userInput.welcomeCard());
-
-    // if (text.contains("mention me")) {
-    // return mentionAdaptiveCardActivityAsync(turnContext);
-    // } else if (text.contains("mention")) {
-    // return mentionActivity(turnContext);
-    // } else if (text.contains("who")) {
-    // return getSingleMember(turnContext);
-    // } else if (text.contains("message")) {
-    // return messageAllMembers(turnContext);
-    // } else if (text.contains("update")) {
-    // return cardActivity(turnContext, true);
-    // } else if (text.contains("delete")) {
-    // return deleteCardActivity(turnContext);
-    // } else {
-    // return cardActivity(turnContext, false);
-    // }
+    return Utils.sendMessage(turnContext, response);
   }
 
   @Override
@@ -129,15 +122,5 @@ public class TeamsConversationBot extends TeamsActivityHandler {
     }
 
     return Utils.sendMessage(turnContext, userInput.welcomeCard());
-    // return membersAdded.stream()
-    // .filter(
-    // member -> !StringUtils
-    // .equals(member.getId(), turnContext.getActivity().getRecipient().getId()))
-    // .map(
-    // channel -> turnContext.sendActivity(MessageFactory
-    // .text("Welcome to the team " + channel.getGivenName() + " " +
-    // channel.getSurname() + ".")))
-    // .collect(CompletableFutures.toFutureList())
-    // .thenApply(resourceResponses -> null);
   }
 }

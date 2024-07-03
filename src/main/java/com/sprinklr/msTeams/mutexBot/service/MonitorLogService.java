@@ -45,8 +45,8 @@ public class MonitorLogService {
   public void stopMonitoring(String resource, String user) {
     MonitorLog log = getLatest(resource, user);
     if (log == null) { return; }
-    if (log.end.isBefore(LocalDateTime.now())) { return; }
-    log.end = LocalDateTime.now();
+    if (log.getEndTime().isBefore(LocalDateTime.now())) { return; }
+    log.setEndTime(LocalDateTime.now());
     repo.save(log);
   }
 

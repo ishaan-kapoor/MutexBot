@@ -45,7 +45,7 @@ public class ReservationLogService {
   public void release(String resource, String user) {
     ReservationLog log = getLatest(resource, user);
     if (log == null) { return; }
-    log.releasedAt = LocalDateTime.now();
+    log.setEndTime(LocalDateTime.now());
     repo.save(log);
   }
 

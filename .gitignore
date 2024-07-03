@@ -6,3 +6,6 @@
 target
 bin
 .idea
+Resources
+*.patch
+ngrok_proxy

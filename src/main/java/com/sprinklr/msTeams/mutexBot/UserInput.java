@@ -9,7 +9,7 @@ import com.microsoft.bot.schema.Attachment;
 import com.microsoft.bot.schema.CardAction;
 import com.microsoft.bot.schema.HeroCard;
 import com.microsoft.bot.schema.Serialization;
-import com.sprinklr.msTeams.mutexBot.model.Resource;
+
 import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 
@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,54 +70,55 @@ public class UserInput {
     return MessageFactory.attachment(card.toAttachment());
   }
 
-  protected CompletableFuture<Void> resourceSelection(TurnContext turnContext) {
-    return chartNameSelection(turnContext);
+  protected Activity resourceSelection(TurnContext turnContext) {
+    return chartNameSelection();
   }
 
-
-  protected CompletableFuture<Void> releaseNameSelection(TurnContext turnContext, String chartName) {
+  protected Activity releaseNameSelection(String chartName) {
     String templateJSON;
     try {
       templateJSON = getTemplateJson(Utils.RESOURCE_ADAPTIVE_CARD_TEMPLATE);
     } catch (IOException e) {
       e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Error while loading adaptive card.<br>" + e);
+      return MessageFactory.text("Error while loading adaptive card.<br>" + e);
     }
-    if (templateJSON == null) {
-      return Utils.sendMessage(turnContext, cardNotFoundMessage);
-    }
+    if (templateJSON == null) { return MessageFactory.text(cardNotFoundMessage); }
 
     StringBuilder chartChoicesBuilder = new StringBuilder();
-    List<String> releaseNames = resourceService.findByChartName(chartName);
-    for (String releaseName : releaseNames) {
+    List<String> resourceNames = resourceService.findByChartName(chartName);
+    String releaseName;
+    for (String resourceName : resourceNames) {
       if (chartChoicesBuilder.length() > 0) { chartChoicesBuilder.append(", "); }
-      chartChoicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", releaseName.substring(chartName.length()+1), releaseName));
+      releaseName = String.format(
+          "{\"title\": \"%s\", \"value\": \"%s\"}",
+          resourceName.substring(chartName.length() + 1), resourceName
+      );
+      chartChoicesBuilder.append(releaseName);
     }
     String cardJSON = templateJSON.replaceFirst("\\{\\}", chartChoicesBuilder.toString());
     cardJSON = cardJSON.replace("$(fieldName)", "Release Name (for '" + chartName + "'):");
     cardJSON = cardJSON.replace("$(cardName)", "releaseNameCard");
 
     JsonNode content;
-    try { content = Serialization.jsonToTree(cardJSON); }
-    catch (IOException e) {
+    try {
+      content = Serialization.jsonToTree(cardJSON);
+    } catch (IOException e) {
       e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Error while serializing adaptive card.<br>" + e);
+      return MessageFactory.text("Error while serializing adaptive card.<br>" + e);
     }
 
-    return Utils.sendMessage(turnContext, getAdaptiveCardAttachment(content));
+    return getAdaptiveCardAttachment(content);
   }
 
-  protected CompletableFuture<Void> chartNameSelection(TurnContext turnContext) {
+  protected Activity chartNameSelection() {
     String templateJSON;
     try {
       templateJSON = getTemplateJson(Utils.RESOURCE_ADAPTIVE_CARD_TEMPLATE);
     } catch (IOException e) {
       e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Error while loading adaptive card.<br>" + e);
+      return MessageFactory.text("Error while loading adaptive card.<br>" + e);
     }
-    if (templateJSON == null) {
-      return Utils.sendMessage(turnContext, cardNotFoundMessage);
-    }
+    if (templateJSON == null) { return MessageFactory.text(cardNotFoundMessage); }
 
     StringBuilder chartChoicesBuilder = new StringBuilder();
     List<String> chart_names = chartNamesService.getAll();
@@ -131,37 +131,37 @@ public class UserInput {
     cardJSON = cardJSON.replace("$(cardName)", "chartNameCard");
 
     JsonNode content;
-    try { content = Serialization.jsonToTree(cardJSON); }
-    catch (IOException e) {
+    try {
+      content = Serialization.jsonToTree(cardJSON);
+    } catch (IOException e) {
       e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Error while serializing adaptive card.<br>" + e);
+      return MessageFactory.text("Error while serializing adaptive card.<br>" + e);
     }
 
-    return Utils.sendMessage(turnContext, getAdaptiveCardAttachment(content));
+    return getAdaptiveCardAttachment(content);
   }
 
-  protected CompletableFuture<Void> durationSelection(TurnContext turnContext, String resource, String action) {
+  protected Activity durationSelection(String resource, String action) {
 
     String templateJSON;
     try {
       templateJSON = getTemplateJson(Utils.DURATION_ADAPTIVE_CARD_TEMPLATE);
     } catch (IOException e) {
       e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Error while loading adaptive card.<br>" + e);
+      return MessageFactory.text("Error while loading adaptive card.<br>" + e);
     }
-    if (templateJSON == null) {
-      return Utils.sendMessage(turnContext, cardNotFoundMessage);
-    }
+    if (templateJSON == null) { return MessageFactory.text(cardNotFoundMessage); }
 
     String cardJSON = templateJSON.replaceAll("\\$\\{resource\\}", resource).replaceAll("\\$\\{action\\}", action);
     JsonNode content;
-    try { content = Serialization.jsonToTree(cardJSON); }
-    catch (IOException e) {
+    try {
+      content = Serialization.jsonToTree(cardJSON);
+    } catch (IOException e) {
       e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Error while serializing adaptive card.<br>" + e);
+      return MessageFactory.text("Error while serializing adaptive card.<br>" + e);
     }
 
-    return Utils.sendMessage(turnContext, getAdaptiveCardAttachment(content));
+    return getAdaptiveCardAttachment(content);
   }
 
   protected Activity getAdaptiveCardAttachment(JsonNode content) {
@@ -177,36 +177,35 @@ public class UserInput {
     return IOUtils.toString(inputStream, StandardCharsets.UTF_8.toString());
   }
 
-  protected CompletableFuture<Void> adminActionSelection(TurnContext turnContext) {
+  protected Activity adminActionSelection() {
     String templateJSON;
     try {
       templateJSON = getTemplateJson(Utils.ADMIN_ACTIONS_ADAPTIVE_CARD_TEMPLATE);
     } catch (IOException e) {
       e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Error while loading adaptive card.<br>" + e);
+      return MessageFactory.text("Error while loading adaptive card.<br>" + e);
     }
-    if (templateJSON == null) {
-      return Utils.sendMessage(turnContext, cardNotFoundMessage);
-    }
+    if (templateJSON == null) { return MessageFactory.text(cardNotFoundMessage); }
 
     StringBuilder choicesBuilder = new StringBuilder();
-    for (String action: Utils.adminActions) {
+    for (String action : Utils.adminActions) {
       if (choicesBuilder.length() > 0) { choicesBuilder.append(", "); }
       choicesBuilder.append(String.format("{\"title\": \"%s\", \"value\": \"%s\"}", action, action.toLowerCase()));
     }
     String cardJSON = templateJSON.replace("{}", choicesBuilder.toString());
 
     JsonNode content;
-    try { content = Serialization.jsonToTree(cardJSON); }
-    catch (IOException e) {
+    try {
+      content = Serialization.jsonToTree(cardJSON);
+    } catch (IOException e) {
       e.printStackTrace();
-      return Utils.sendMessage(turnContext, "Error while serializing adaptive card.<br>" + e);
+      return MessageFactory.text("Error while serializing adaptive card.<br>" + e);
     }
 
-    return Utils.sendMessage(turnContext, getAdaptiveCardAttachment(content));
+    return getAdaptiveCardAttachment(content);
   }
 
-  protected CompletableFuture<Void> actionSelection(TurnContext turnContext, String resource) {
+  protected Activity actionSelection(String resource) {
     List<CardAction> buttons = new ArrayList<>();
     for (String action : Utils.actions) {
       CardAction cardAction = new CardAction();
@@ -218,6 +217,6 @@ public class UserInput {
     HeroCard card = new HeroCard();
     card.setButtons(buttons);
     card.setTitle("Choose the action to perform on \"" + resource + "\".");
-    return Utils.sendMessage(turnContext, MessageFactory.attachment(card.toAttachment()));
+    return MessageFactory.attachment(card.toAttachment());
   }
 }

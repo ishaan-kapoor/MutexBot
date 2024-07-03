@@ -11,10 +11,16 @@ import com.sprinklr.msTeams.mutexBot.Utils;
 public class MonitorLog {
   @Id
   private String _id;
-  public String resource;
-  public String user;
-  public LocalDateTime start;
-  public LocalDateTime end;
+  private String resource;
+  private String user;
+  private LocalDateTime start;
+  private LocalDateTime end;
+
+  public String getResource() { return resource; }
+  public String getUser() { return user; }
+  public LocalDateTime getStartTime() { return start; }
+  public LocalDateTime getEndTime() { return end; }
+  public void setEndTime(LocalDateTime end) { this.end = end; }
 
   public MonitorLog(String resource, String user, LocalDateTime start, LocalDateTime end) {
     this.resource = resource;
@@ -27,4 +33,3 @@ public class MonitorLog {
     return String.format("%s monitored %s from %s till %s", user, resource, start.format(Utils.timeFormat), end.format(Utils.timeFormat));
   }
 }
-

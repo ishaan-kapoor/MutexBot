@@ -16,10 +16,15 @@ public class Resource {
   // private String _id;
   private String name;
   private boolean reserved;
-  public String reservedBy;
-  public LocalDateTime reservedTill;
-  public List<UserTimeEntry> monitoredBy;
-  public int maxAllocationTime = 24*60;
+  private String reservedBy;
+  private LocalDateTime reservedTill;
+  private List<UserTimeEntry> monitoredBy;
+
+  public int maxAllocationTime = 24 * 60;
+
+  public String getReservedBy() { return reservedBy; }
+  public LocalDateTime getReservedTill() { return reservedTill; }
+  public List<UserTimeEntry> getMonitoredBy() { return monitoredBy; }
 
   public Resource(String name) {
     this.name = name;
@@ -75,14 +80,11 @@ public class Resource {
   }
 
   public String toString() {
-    // return String.format("%s, %s, %s, %s, %s", name, reserved, reservedBy, reservedTill, monitoredBy);
     String message = name;
     if (isReserved()) {
-      // System.out.println("res");
       message += String.format(" is reserved by %s till %s", reservedBy, reservedTill);
     }
     if (isMonitored()) {
-      // System.out.println("mon");
       message += "\nMonitored by the following:";
       for (UserTimeEntry entry : monitoredBy) {
         message += String.format("\n\t%s", entry);
@@ -91,15 +93,9 @@ public class Resource {
     return message;
   }
 
-  public String getName() {
-    return name;
-  }
+  public String getName() { return name; }
 
   public boolean isReserved() {
-    // System.out.println("res called");
-    // System.out.println(reserved);
-    // System.out.println(reservedTill);
-    // System.out.println(LocalDateTime.now());
     if (!reserved) { return false; }
     if (reservedTill == null) { return false; }
     if (reservedTill.isBefore(LocalDateTime.now())) { reserved = false; }
@@ -107,7 +103,6 @@ public class Resource {
   }
 
   public boolean isMonitored() {
-    // System.out.println("mon called");
     if (monitoredBy == null) { return false; }
     return monitoredBy.size() > 0;
   }

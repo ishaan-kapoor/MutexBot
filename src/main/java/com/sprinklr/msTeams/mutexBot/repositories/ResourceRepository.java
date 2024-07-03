@@ -19,6 +19,6 @@ public interface ResourceRepository extends MongoRepository<Resource, String> {
 
   @Query("{ $or: [ { 'reserved': false }, { 'reserved': true, 'reservedTill': { $lt: ?0 } } ] }")
   List<Resource> findAvailableResources(LocalDateTime now);
+
   // boolean existsById(String id);
 }
-

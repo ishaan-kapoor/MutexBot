@@ -1,7 +1,6 @@
 package com.sprinklr.msTeams.mutexBot.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -33,11 +32,10 @@ public class ResourceService {
   }
 
   public synchronized void refreshCache() {
-    // System.out.println("Cache Refresh");
     cache.clear();
     cache.addAll(repo.findAll().stream()
-      .map(Resource::getName)
-      .collect(Collectors.toList()));
+            .map(Resource::getName)
+            .collect(Collectors.toList()));
     accessCount.set(0);
   }
 
@@ -82,11 +80,11 @@ public class ResourceService {
   public Resource find(String name) throws Exception {
     incrementAccessCount();
     Optional<Resource> resource = repo.findById(name);
-    if (! resource.isPresent()) { return null; }
+    if (!resource.isPresent()) { return null; }
     return resource.get();
   }
 
-  public void save(String resourceName) {  // for creating new resources
+  public void save(String resourceName) { // for creating new resources
     repo.save(new Resource(resourceName));
     refreshCache();
   }
@@ -97,8 +95,6 @@ public class ResourceService {
   }
 
   public boolean exists(String name) {
-    // return repo.existsById(name);
-    // System.out.println("Cache Hit");
     incrementAccessCount();
     return cache.contains(name);
   }
@@ -110,9 +106,8 @@ public class ResourceService {
 
   public List<String> findByChartName(String chartName) {
     incrementAccessCount();
-    return repo.findByIdStartingWith(chartName+"-").stream()
-      .map(Resource::getName)
-      .collect(Collectors.toList());
+    return repo.findByIdStartingWith(chartName + "-").stream()
+        .map(Resource::getName)
+        .collect(Collectors.toList());
   }
 }
-

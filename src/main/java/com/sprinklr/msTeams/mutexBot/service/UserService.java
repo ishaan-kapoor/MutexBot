@@ -23,11 +23,11 @@ public class UserService {
 
   public User find(String id) throws Exception {
     Optional<User> user = repo.findById(id);
-    if (! user.isPresent()) {
+    if (!user.isPresent()) {
       User new_user = new User(id);
       save(new_user);
       user = repo.findById(id);
-      if (! user.isPresent()) {
+      if (!user.isPresent()) {
         throw new Exception("Created a user, but couldn't fetch it.");
       }
     }
@@ -53,6 +53,7 @@ public class UserService {
       e.printStackTrace();
       return false;
     }
+
     if (user.getEmail().equals(User.defaultEmail)) { return false; }
     if (user.getName().equals(User.defaultName)) { return false; }
     return true;

@@ -41,10 +41,9 @@ public class ChartNameService {
 
   public List<String> getAll() {
     List<String> chartNames = new ArrayList<String>();
-    for(ChartName chartName: repo.findAll()) {
+    for (ChartName chartName : repo.findAll()) {
       chartNames.add(chartName.getName());
     }
     return chartNames;
   }
 }
-

@@ -25,6 +25,10 @@ import com.google.gson.JsonParser;
 import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
+import java.util.concurrent.CompletableFuture;
+
 @Service
 public class HelmCharts {
   @Value("${gitlab.token}")
@@ -53,6 +57,20 @@ public class HelmCharts {
     syncDB();
   }
 
+  @Async
+  private CompletableFuture<List<String>> getReleases(String chartName) {
+    List<String> releases = new ArrayList<>();
+    Optional<List<JsonObject>> releasesOptional = getTree("charts/" + chartName + "/releases");
+    if (!releasesOptional.isPresent()) {
+      System.err.println("Invalid path: charts/" + chartName + "/releases");
+    }
+    for (JsonObject release : releasesOptional.get()) {
+      if (!release.get("type").getAsString().equals("tree")) { continue; }
+      releases.add(chartName + "-" + release.get("name").getAsString());
+    }
+    return CompletableFuture.completedFuture(releases);
+  }
+
   public synchronized void getRepo() {
     chartNames.clear();
     resourceNames.clear();
@@ -64,25 +82,21 @@ public class HelmCharts {
     }
 
     List<JsonObject> charts = chartsOptional.get();
+    List<CompletableFuture<List<String>>> futures = new ArrayList<>();
 
-    for (int i = 0; i < charts.size(); i++) {
-      JsonObject chart = charts.get(i).getAsJsonObject();
-      if (!chart.get("type").getAsString().equals("tree")) { continue; }
+    for (JsonObject chart : charts) {
+      if (!chart.getAsJsonObject().get("type").getAsString().equals("tree")) { continue; }
       String chartName = chart.get("name").getAsString();
       chartNames.add(chartName);
+      futures.add(getReleases(chartName));
+    }
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-      // Get the list of releases for this chart
-      Optional<List<JsonObject>> releasesOptional = getTree("charts/" + chartName + "/releases");
-      if (!releasesOptional.isPresent()) {
-        System.err.println("Invalid path: charts/" + chartName + "/releases");
-        continue;
-      }
-      List<JsonObject> releases = releasesOptional.get();
-      for (int j = 0; j < releases.size(); j++) {
-        JsonObject release = releases.get(j).getAsJsonObject();
-        if (!release.get("type").getAsString().equals("tree")) { continue; }
-        String releaseName = release.get("name").getAsString();
-        resourceNames.add(chartName + "-" + releaseName);
+    for (CompletableFuture<List<String>> future : futures) {
+      try {
+        resourceNames.addAll(future.get());
+      } catch (Exception e) {
+        e.printStackTrace();
       }
     }
   }
@@ -137,10 +151,14 @@ public class HelmCharts {
     Set<String> dbResources = new HashSet<String>(resourceService.getAllNames());
     Set<String> newResources = new HashSet<String>(resourceNames);
     newResources.removeAll(dbResources);
+    System.out.println("Identified new resources");
     newResources.forEach(resourceName -> resourceService.save(resourceName));
+    System.out.println("Saved new resources");
     Set<String> deletedResources = new HashSet<String>(dbResources);
     deletedResources.removeAll(resourceNames);
+    System.out.println("Identified deleted resources");
     deletedResources.forEach(resourceName -> resourceService.delete(resourceName));
+    System.out.println("Deleted resources");
 
     Set<String> dbCharts = new HashSet<String>(chartNameService.getAll());
     Set<String> newCharts = new HashSet<String>(chartNames);

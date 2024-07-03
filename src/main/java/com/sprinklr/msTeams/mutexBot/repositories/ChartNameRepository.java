@@ -8,4 +8,3 @@ import com.sprinklr.msTeams.mutexBot.model.ChartName;
 @Repository
 public interface ChartNameRepository extends MongoRepository<ChartName, String> {
 }
-
