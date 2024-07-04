@@ -54,14 +54,15 @@ public class Resource {
     }
   }
 
-  public void stopMonitoring(String user) {
+  public boolean stopMonitoring(String user) {
     Iterator<UserTimeEntry> iterator = monitoredBy.iterator();
     while (iterator.hasNext()) {
       if (iterator.next().user.equals(user)) {
         iterator.remove();
-        break;
+        return true;
       }
     }
+    return false;
   }
 
   public void monitor(String user, LocalDateTime till) {

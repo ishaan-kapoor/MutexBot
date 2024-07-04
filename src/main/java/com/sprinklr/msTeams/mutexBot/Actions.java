@@ -266,11 +266,12 @@ public class Actions {
   }
 
   protected Activity stopMonitoringResource(TeamsChannelAccount user, Resource resource) {
-    resource.stopMonitoring(user.getId());
+    if (!resource.stopMonitoring(user.getId())) {
+      String message = String.format(" was not monitoring \"%s\".", resource.getName());
+      return Utils.makeMentionedResponse(user, message);
+    }
     resourceService.save(resource);
-
     monitorLogService.stopMonitoring(resource.getName(), user.getId());
-
     String message = String.format(" stopped monitoring \"%s\".", resource.getName());
     return Utils.makeMentionedResponse(user, message);
   }
