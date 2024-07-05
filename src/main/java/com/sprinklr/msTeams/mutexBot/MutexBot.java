@@ -16,22 +16,43 @@ import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+/**
+ * The MutexBot class handles the core functionality of the Teams bot for
+ * managing reservations.
+ * It extends {@link TeamsActivityHandler} to provide custom behavior for
+ * message and member activities.
+ */
 public class MutexBot extends TeamsActivityHandler {
   private final UserService userService;
   private final UserInput userInput;
   private final Actions actions;
   private final static String helpMessage = "Commands:<br> &emsp;Reserve \\<Resource\\> [for \\<Duration\\>]<br> &emsp;Release \\<Resource\\><br> &emsp;Status \\<Resource\\><br> &emsp;Monitor \\<Resource\\> [for \\<Duration\\>]<br> &emsp;StopMonitoring \\<Resource\\><br>e.g.<br> &emsp;Reserve prod:qa6 for 1h12m<br> &emsp;StopMonitoring dev:qa6<br><br>Admin only commands:<br> &emsp;CreateResource \\<Resource\\><br> &emsp;DeleteResource \\<Resource\\><br> &emsp;CreateChartName \\<ChartName\\><br> &emsp;DeleteChartName \\<ChartName\\><br> &emsp;ForceRelease \\<Resource\\><br> &emsp;MakeAdmin \\<User Email\\><br> &emsp;DismissAdmin \\<User Email\\><br> &emsp;ResourceLog \\<Resource\\><br> &emsp;UserLog \\<User Email\\><br><br><hr>Send \"Hello\" for welcome card.<br>Send \"run\" to select a resource.";
 
+  /**
+   * Constructs a MutexBot instance with the specified services.
+   *
+   * @param userService The service responsible for user-related operations.
+   * @param userInput   The class that handles user input.
+   * @param actions     The class that defines actions the bot can perform.
+   */
   @Autowired
-  public MutexBot(
-      UserService userService,
-      UserInput userInput,
-      Actions actions) {
+  public MutexBot(UserService userService, UserInput userInput, Actions actions) {
     this.userService = userService;
     this.userInput = userInput;
     this.actions = actions;
   }
 
+  /**
+   * Handles messages sent to the bot.
+   *
+   * <p>
+   * This method processes text messages and card responses to determine the
+   * appropriate action.
+   * </p>
+   *
+   * @param turnContext The context object for this turn.
+   * @return A CompletableFuture representing the async operation.
+   */
   @Override
   protected CompletableFuture<Void> onMessageActivity(TurnContext turnContext) {
     turnContext.getActivity().removeRecipientMention();
@@ -61,7 +82,7 @@ public class MutexBot extends TeamsActivityHandler {
 
     String message = turnContext.getActivity().getText().trim().replaceAll(" +", " ");
     String[] message_array = message.split(" ");
-    if (message_array.length == 0) {
+    if (message_array.length == 0) { // message can't be empty
       response = MessageFactory.text("Something went wrong.");
     } else if ((message_array.length == 1) && (message.toLowerCase().equals("help"))) {
       response = MessageFactory.text(helpMessage);
@@ -76,8 +97,7 @@ public class MutexBot extends TeamsActivityHandler {
     } else if (message_array.length == 2) {
       response = actions.actOnResource(turnContext, message_array[1], message_array[0].toLowerCase());
     } else if (message_array.length == 4) {
-      response = actions.actOnResource(turnContext, message_array[1], message_array[0].toLowerCase(),
-          Utils.timeString2Int(message_array[3].toLowerCase()));
+      response = actions.actOnResource(turnContext, message_array[1], message_array[0].toLowerCase(), Utils.timeString2Int(message_array[3].toLowerCase()));
     } else {
       Utils.sendMessage(turnContext, "Invalid message recieved:<br>" + message);
       response = userInput.welcomeCard();
@@ -85,6 +105,19 @@ public class MutexBot extends TeamsActivityHandler {
     return Utils.sendMessage(turnContext, response);
   }
 
+  /**
+   * Handles the event when members are added to a team.
+   *
+   * <p>
+   * This method registers newly added users in the database and sends a welcome
+   * message.
+   * </p>
+   *
+   * @param membersAdded The list of members added to the team.
+   * @param teamInfo     Information about the team.
+   * @param turnContext  The context object for this turn.
+   * @return A CompletableFuture representing the async operation.
+   */
   @Override
   protected CompletableFuture<Void> onTeamsMembersAdded(
       List<TeamsChannelAccount> membersAdded,

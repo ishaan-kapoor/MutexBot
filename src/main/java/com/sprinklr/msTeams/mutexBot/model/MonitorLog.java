@@ -7,6 +7,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.sprinklr.msTeams.mutexBot.Utils;
 
+/**
+ * Represents a monitoring log entry for a resource by a user.
+ * Each log entry contains details such as resource name, user ID,
+ * start time, and end time.
+ */
 @Document(collection = "Monitor-Log")
 public class MonitorLog {
   @Id

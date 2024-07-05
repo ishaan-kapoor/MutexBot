@@ -15,31 +15,39 @@ import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+/**
+ * Main entry point for the Mutex Bot application.
+ * 
+ * <p>
+ * This class extends {@link BotDependencyConfiguration}, which provides the
+ * default
+ * implementations for a Bot application. It overrides methods to provide custom
+ * implementations specific to the Mutex Bot.
+ * </p>
+ */
+
 @SpringBootApplication
 @EnableScheduling
 @EnableAsync
 @Import({ BotController.class })
-
-/**
- * This class extends the BotDependencyConfiguration which provides the default
- * implementations for a Bot application. The Application class should
- * override methods in order to provide custom implementations.
- */
 public class Application extends BotDependencyConfiguration {
   public static void main(String[] args) {
     SpringApplication.run(Application.class, args);
   }
 
   /**
-   * Returns the Bot for this application.
-   *
+   * Returns the Bot implementation for this application.
+   * 
    * <p>
    * The @Component annotation could be used on the Bot class instead of this
    * method
    * with the @Bean annotation.
    * </p>
    *
-   * @return The Bot implementation for this application.
+   * @param userService The service responsible for user-related operations.
+   * @param userInput   The class that handles user input.
+   * @param actions     The class that defines actions the bot can perform.
+   * @return An instance of {@link MutexBot}.
    */
   @Bean
   public MutexBot getBot(UserService userService, UserInput userInput, Actions actions) {
@@ -50,7 +58,7 @@ public class Application extends BotDependencyConfiguration {
    * Returns a custom Adapter that provides error handling.
    *
    * @param configuration The Configuration object to use.
-   * @return An error handling BotFrameworkHttpAdapter.
+   * @return An instance of {@link AdapterWithErrorHandler}.
    */
   @Override
   public BotFrameworkHttpAdapter getBotFrameworkHttpAdaptor(Configuration configuration) {

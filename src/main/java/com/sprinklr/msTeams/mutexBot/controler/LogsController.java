@@ -21,6 +21,13 @@ import com.sprinklr.msTeams.mutexBot.service.MonitorLogService;
 import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
 import com.sprinklr.msTeams.mutexBot.service.UserService;
 
+/**
+ * Constructs a LogsController with the specified services.
+ * 
+ * @param monitorLogService     the service to handle monitor logs
+ * @param reservationLogService the service to handle reservation logs
+ * @param userService           the service to handle user information
+ */
 @RestController
 public class LogsController {
 
@@ -38,6 +45,14 @@ public class LogsController {
     this.userService = userService;
   }
 
+  /**
+   * Retrieves the user or resource name based on the provided perspective.
+   *
+   * @param userId       the ID of the user
+   * @param resourceName the name of the resource
+   * @param perspective  the perspective for the logs ("resource" or "user")
+   * @return the name of the user or resource based on the perspective
+   */
   private String value(String userId, String resourceName, String perspective) {
     if (perspective == null) { perspective = new String("resource"); }
     perspective = perspective.toLowerCase();
@@ -58,6 +73,15 @@ public class LogsController {
     }
   }
 
+  /**
+   * Endpoint to fetch user/resource logs.
+   * 
+   * @param resource    the name of the resource (optional)
+   * @param user        the ID of the user (optional)
+   * @param perspective the perspective of the logs ("resource" or "user")
+   *                    (optional)
+   * @return the HTML formatted logs
+   */
   @GetMapping("/logs")
   public String getUserLogs(
       @RequestParam(required = false) String resource,

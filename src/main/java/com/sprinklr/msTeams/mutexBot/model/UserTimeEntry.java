@@ -2,6 +2,10 @@ package com.sprinklr.msTeams.mutexBot.model;
 
 import java.time.LocalDateTime;
 
+/**
+ * Represents an entry for user monitoring time.
+ * Each entry includes the user and the monitoring end time.
+ */
 public class UserTimeEntry {
   public String user;
   public LocalDateTime till;

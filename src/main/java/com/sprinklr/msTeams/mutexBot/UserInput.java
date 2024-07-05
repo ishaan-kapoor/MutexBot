@@ -23,18 +23,36 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * The UserInput class handles user interactions and generates various adaptive
+ * cards for the Teams bot.
+ * It provides methods to generate welcome cards, resource selection cards,
+ * release name selection cards, chart name selection cards, duration selection
+ * cards, and admin action selection cards.
+ */
 @Component
 public class UserInput {
   private static final String cardNotFoundMessage = "Error while loading adaptive card.<br>(CODE: json file for card not found)";
   private final ResourceService resourceService;
   private ChartNameService chartNamesService;
 
+  /**
+   * Constructs a UserInput instance with the specified services.
+   *
+   * @param resourceService   The service responsible for resource-related operations.
+   * @param chartNamesService The service responsible for chart name operations.
+   */
   @Autowired
   public UserInput(ResourceService resourceService, ChartNameService chartNamesService) {
     this.resourceService = resourceService;
     this.chartNamesService = chartNamesService;
   }
 
+  /**
+   * Generates a welcome card with options for the user.
+   *
+   * @return An Activity containing the welcome card.
+   */
   protected Activity welcomeCard() {
     List<CardAction> buttons = new ArrayList<>();
 
@@ -70,10 +88,22 @@ public class UserInput {
     return MessageFactory.attachment(card.toAttachment());
   }
 
+  /**
+   * Generates a card for resource selection.
+   *
+   * @param turnContext The context of the current turn.
+   * @return An Activity containing the resource selection card.
+   */
   protected Activity resourceSelection(TurnContext turnContext) {
     return chartNameSelection();
   }
 
+  /**
+   * Generates a card for release name selection based on the given chart name.
+   *
+   * @param chartName The name of the chart.
+   * @return An Activity containing the release name selection card.
+   */
   protected Activity releaseNameSelection(String chartName) {
     String templateJSON;
     try {
@@ -110,6 +140,11 @@ public class UserInput {
     return getAdaptiveCardAttachment(content);
   }
 
+  /**
+   * Generates a card for chart name selection.
+   *
+   * @return An Activity containing the chart name selection card.
+   */
   protected Activity chartNameSelection() {
     String templateJSON;
     try {
@@ -141,6 +176,13 @@ public class UserInput {
     return getAdaptiveCardAttachment(content);
   }
 
+  /**
+   * Generates a card for selecting the duration of an action on a resource.
+   *
+   * @param resource The name of the resource.
+   * @param action   The action to be performed on the resource.
+   * @return An Activity containing the duration selection card.
+   */
   protected Activity durationSelection(String resource, String action) {
 
     String templateJSON;
@@ -164,6 +206,12 @@ public class UserInput {
     return getAdaptiveCardAttachment(content);
   }
 
+  /**
+   * Generates an adaptive card attachment from the given JSON content.
+   *
+   * @param content The JSON content of the adaptive card.
+   * @return An Activity containing the adaptive card attachment.
+   */
   protected Activity getAdaptiveCardAttachment(JsonNode content) {
     Attachment adaptiveCardAttachment = new Attachment();
     adaptiveCardAttachment.setContentType("application/vnd.microsoft.card.adaptive");
@@ -171,12 +219,24 @@ public class UserInput {
     return MessageFactory.attachment(adaptiveCardAttachment);
   }
 
+  /**
+   * Retrieves the JSON template for an adaptive card from the specified path.
+   *
+   * @param templatePath The path to the template JSON file.
+   * @return The JSON content of the template.
+   * @throws IOException If an I/O error occurs while reading the template file.
+   */
   protected String getTemplateJson(String templatePath) throws IOException {
     InputStream inputStream = getClass().getResourceAsStream(templatePath);
     if (inputStream == null) { return null; }
     return IOUtils.toString(inputStream, StandardCharsets.UTF_8.toString());
   }
 
+  /**
+   * Generates a card for selecting admin actions.
+   *
+   * @return An Activity containing the admin action selection card.
+   */
   protected Activity adminActionSelection() {
     String templateJSON;
     try {
@@ -205,6 +265,12 @@ public class UserInput {
     return getAdaptiveCardAttachment(content);
   }
 
+  /**
+   * Generates a card for selecting an action to perform on a resource.
+   *
+   * @param resource The name of the resource to perform action on.
+   * @return An Activity containing the action selection card.
+   */
   protected Activity actionSelection(String resource) {
     List<CardAction> buttons = new ArrayList<>();
     for (String action : Utils.actions) {

@@ -28,6 +28,12 @@ import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 import org.springframework.scheduling.annotation.Async;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * The HelmCharts class is responsible for synchronizing the local database with
+ * the Helm charts repository in GitLab.
+ * It retrieves the directory structure from the GitLab repository and updates
+ * the local database accordingly.
+ */
 @Service
 public class HelmCharts {
   @Value("${gitlab.token}")
@@ -44,18 +50,35 @@ public class HelmCharts {
   private final ResourceService resourceService;
   private final ChartNameService chartNameService;
 
+  /**
+   * Constructs a HelmCharts instance with the specified services.
+   *
+   * @param resourceService  The service responsible for resource-related
+   *                         operations.
+   * @param chartNameService The service responsible for chart name operations.
+   */
   @Autowired
   public HelmCharts(ResourceService resourceService, ChartNameService chartNameService) {
     this.resourceService = resourceService;
     this.chartNameService = chartNameService;
   }
 
+  /**
+   * Initializes the base URL for the GitLab repository and triggers an initial
+   * synchronization.
+   */
   @PostConstruct
   public void init() {
     baseUrl = "https://prod-gitlab.sprinklr.com/api/v4/projects/" + projectId + "/repository/tree";
     syncDB();
   }
 
+  /**
+   * Asynchronously retrieves the list of releases for a given chart.
+   *
+   * @param chartName The name of the chart.
+   * @return A CompletableFuture containing the list of releases.
+   */
   @Async
   private CompletableFuture<List<String>> getReleases(String chartName) {
     List<String> releases = new ArrayList<>();
@@ -70,6 +93,10 @@ public class HelmCharts {
     return CompletableFuture.completedFuture(releases);
   }
 
+  /**
+   * Retrieves the repository structure from GitLab and updates the local lists of
+   * chart and resource names.
+   */
   public synchronized void getRepo() {
     chartNames.clear();
     resourceNames.clear();
@@ -89,8 +116,9 @@ public class HelmCharts {
       chartNames.add(chartName);
       futures.add(getReleases(chartName));
     }
-    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
+    // Collect all release names
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     for (CompletableFuture<List<String>> future : futures) {
       try {
         resourceNames.addAll(future.get());
@@ -100,6 +128,14 @@ public class HelmCharts {
     }
   }
 
+  /**
+   * Retrieves the tree structure of the specified path from the GitLab
+   * repository.
+   *
+   * @param path The path to retrieve the tree structure for.
+   * @return An Optional containing the list of JsonObjects representing the tree
+   *         structure.
+   */
   private Optional<List<JsonObject>> getTree(String path) {
     HttpClient client = HttpClient.newHttpClient();
     List<JsonObject> allItems = new ArrayList<>();
@@ -127,6 +163,7 @@ public class HelmCharts {
         return Optional.empty();
       }
 
+      // Get all pages
       if (response.statusCode() == 200) {
         JsonArray items = JsonParser.parseString(response.body()).getAsJsonArray();
         if (items.size() == 0) { break; }  // No more items
@@ -140,7 +177,11 @@ public class HelmCharts {
     return Optional.of(allItems);
   }
 
-  @Scheduled(cron = "0 0 * * * ?") // every hour
+  /**
+   * Schedules the synchronization of the local database with the GitLab
+   * repository every hour.
+   */
+  @Scheduled(cron = "0 0 * * * ?")
   public synchronized void syncDB() {
     System.out.println("\nGetting Repo");
     getRepo();

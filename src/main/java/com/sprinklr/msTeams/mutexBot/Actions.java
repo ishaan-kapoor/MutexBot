@@ -22,6 +22,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * The Actions class is the brain of the Teams bot
+ */
 @Component
 public class Actions {
   private ResourceService resourceService;
@@ -57,6 +60,13 @@ public class Actions {
     this.appPassword = appPassword;
   }
 
+  /**
+   * Performs an action on the specified resource.
+   * 
+   * @param turnContext   the context for this turn of the conversation.
+   * @param resource_name the name of the resource to act on.
+   * @return an Activity representing the response.
+   */
   protected Activity actOnResource(TurnContext turnContext, String resource_name) {
     if (!resourceService.exists(resource_name)) {
       return MessageFactory.text("Resource \"" + resource_name + "\" not found.");
@@ -64,6 +74,14 @@ public class Actions {
     return actOnResource(turnContext, resource_name, "*");
   }
 
+  /**
+   * Performs the sprcified action on the specified resource.
+   * 
+   * @param turnContext   the context for this turn of the conversation.
+   * @param resource_name the name of the resource to act on.
+   * @param action        the action to perform on the resource.
+   * @return an Activity representing the response.
+   */
   protected Activity actOnResource(TurnContext turnContext, String resource_name, String action) {
     for (String act : Utils.adminActions) {
       if (act.toLowerCase().equals(action)) {
@@ -109,6 +127,14 @@ public class Actions {
     return response;
   }
 
+  /**
+   * Performs an admin action on the specified resource.
+   * 
+   * @param turnContext   the context for this turn of the conversation.
+   * @param resource_name the name of the resource to act on.
+   * @param action        the admin action to perform on the resource.
+   * @return an Activity representing the response.
+   */
   protected Activity adminAction(TurnContext turnContext, String resource_name, String action) {
     String user_id = turnContext.getActivity().getFrom().getId();
     TeamsChannelAccount teamsUser = TeamsInfo.getMember(turnContext, user_id).join();
@@ -232,6 +258,15 @@ public class Actions {
     return MessageFactory.text("Invalid admin action: " + action);
   }
 
+  /**
+   * Performs specified action on the specified resource for a given duration.
+   * 
+   * @param turnContext   the context for this turn of the conversation.
+   * @param resource_name the name of the resource to act on.
+   * @param action        the action to perform on the resource.
+   * @param duration      the duration for the action.
+   * @return an Activity representing the response.
+   */
   protected Activity actOnResource(TurnContext turnContext, String resource_name, String action,
       Integer duration) {
     TeamsChannelAccount user = TeamsInfo.getMember(turnContext, turnContext.getActivity().getFrom().getId()).join();
@@ -265,6 +300,13 @@ public class Actions {
     return response;
   }
 
+  /**
+   * Stops monitoring the specified resource.
+   * 
+   * @param user     the user who is stopping the monitoring.
+   * @param resource the resource to stop monitoring.
+   * @return an Activity representing the response.
+   */
   protected Activity stopMonitoringResource(TeamsChannelAccount user, Resource resource) {
     if (!resource.stopMonitoring(user.getId())) {
       String message = String.format(" was not monitoring \"%s\".", resource.getName());
@@ -276,6 +318,14 @@ public class Actions {
     return Utils.makeMentionedResponse(user, message);
   }
 
+  /**
+   * Starts monitoring the specified resource.
+   * 
+   * @param user     the user who is starting the monitoring.
+   * @param resource the resource to start monitoring.
+   * @param duration the duration for the monitoring.
+   * @return an Activity representing the response.
+   */
   protected Activity monitorResource(TeamsChannelAccount user, Resource resource, int duration) {
     LocalDateTime monitorTill = LocalDateTime.now().plusMinutes(duration);
     resource.monitor(user.getId(), monitorTill);
@@ -288,10 +338,27 @@ public class Actions {
     return Utils.makeMentionedResponse(user, message);
   }
 
+  /**
+   * Releases the specified resource.
+   * 
+   * @param user        the user who is releasing the resource.
+   * @param turnContext the context for this turn of the conversation.
+   * @param resource    the resource to release.
+   * @return an Activity representing the response.
+   */
   protected Activity releaseResource(TeamsChannelAccount user, TurnContext turnContext, Resource resource) {
     return releaseResource(user, turnContext, resource, false);
   }
 
+  /**
+   * Releases the specified resource with a force option.
+   * 
+   * @param user        the user who is releasing the resource.
+   * @param turnContext the context for this turn of the conversation.
+   * @param resource    the resource to release.
+   * @param force       whether to force the release.
+   * @return an Activity representing the response.
+   */
   protected Activity releaseResource(TeamsChannelAccount user, TurnContext turnContext, Resource resource, boolean force) {
     if (!resource.isReserved()) {
       return MessageFactory.text(String.format("Resource \"%s\" is not reserved by anyone.", resource.getName()));
@@ -342,6 +409,15 @@ public class Actions {
     return Utils.makeMentionedResponse(user, message);
   }
 
+  /**
+   * Reserves the specified resource.
+   * 
+   * @param user        the user who is reserving the resource.
+   * @param turnContext the context for this turn of the conversation.
+   * @param resource    the resource to reserve.
+   * @param duration    the duration for the reservation.
+   * @return an Activity representing the response.
+   */
   protected Activity reserveResource(TeamsChannelAccount user, TurnContext turnContext, Resource resource,
       int duration) {
     if (resource.isReserved()) {
@@ -378,6 +454,12 @@ public class Actions {
     return Utils.makeMentionedResponse(user, message);
   }
 
+  /**
+   * Gets the status of the specified resource.
+   * 
+   * @param resource the resource to get the status of.
+   * @return an Activity representing the response.
+   */
   protected Activity getStatus(Resource resource) {
     String response;
 
@@ -400,6 +482,13 @@ public class Actions {
     return MessageFactory.text(response);
   }
 
+  /**
+   * Handles admin actions card input.
+   * 
+   * @param turnContext the context for this turn of the conversation.
+   * @param data        the data from the card input.
+   * @return an Activity representing the response.
+   */
   protected Activity handleAdminActionsCard(TurnContext turnContext, Map<String, Object> data) {
     String action = (String) data.get("action");
     String arg = (String) data.get("arg");
@@ -409,6 +498,13 @@ public class Actions {
     return adminAction(turnContext, arg, action);
   }
 
+  /**
+   * Handles release name card input.
+   * 
+   * @param turnContext the context for this turn of the conversation.
+   * @param data        the data from the card input.
+   * @return an Activity representing the response.
+   */
   protected Activity handleReleaseNameCard(TurnContext turnContext, Map<String, Object> data) {
     String releaseName = (String) data.get("value");
     if (releaseName == null) {
@@ -417,6 +513,13 @@ public class Actions {
     return actOnResource(turnContext, releaseName);
   }
 
+  /**
+   * Handles chart name card input.
+   * 
+   * @param turnContext the context for this turn of the conversation.
+   * @param data        the data from the card input.
+   * @return an Activity representing the response.
+   */
   protected Activity handleChartNameCard(TurnContext turnContext, Map<String, Object> data) {
     String chartName = (String) data.get("value");
     if (chartName == null) {
@@ -425,23 +528,13 @@ public class Actions {
     return userInput.releaseNameSelection(chartName);
   }
 
-  protected Activity handleResourceFormCard(TurnContext turnContext, Map<String, Object> data) {
-    String chartName = (String) data.get("chart_name");
-    String releaseName = (String) data.get("chart_release_name");
-    if ((chartName == null) || (releaseName == null)) {
-      return MessageFactory.text("Please enter a valid resource name.");
-    }
-    return actOnResource(turnContext, chartName + "-" + releaseName);
-  }
-
-  protected Activity handleResourceCard(TurnContext turnContext, Map<String, Object> data) {
-    String resource = (String) data.get("resource");
-    if (resource == null) {
-      return MessageFactory.text("Please enter a valid resource name.");
-    }
-    return actOnResource(turnContext, resource);
-  }
-
+  /**
+   * Handles duration card input.
+   * 
+   * @param turnContext the context for this turn of the conversation.
+   * @param data        the data from the card input.
+   * @return an Activity representing the response.
+   */
   protected Activity handleDurationCard(TurnContext turnContext, Map<String, Object> data) {
     Integer hours, minutes;
     try {
