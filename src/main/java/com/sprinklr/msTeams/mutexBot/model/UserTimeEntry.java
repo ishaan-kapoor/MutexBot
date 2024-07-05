@@ -1,4 +1,4 @@
-package com.sprinklr.msTeams.mutexBot.utils;
+package com.sprinklr.msTeams.mutexBot.model;
 
 import java.time.LocalDateTime;
 

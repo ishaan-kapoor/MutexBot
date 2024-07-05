@@ -8,12 +8,12 @@ import com.microsoft.bot.schema.teams.TeamsChannelAccount;
 
 import com.sprinklr.msTeams.mutexBot.model.Resource;
 import com.sprinklr.msTeams.mutexBot.model.User;
+import com.sprinklr.msTeams.mutexBot.model.UserTimeEntry;
 import com.sprinklr.msTeams.mutexBot.service.ChartNameService;
 import com.sprinklr.msTeams.mutexBot.service.MonitorLogService;
 import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
 import com.sprinklr.msTeams.mutexBot.service.ResourceService;
 import com.sprinklr.msTeams.mutexBot.service.UserService;
-import com.sprinklr.msTeams.mutexBot.utils.UserTimeEntry;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -443,8 +443,14 @@ public class Actions {
   }
 
   protected Activity handleDurationCard(TurnContext turnContext, Map<String, Object> data) {
-    Integer hours = Integer.parseInt((String) data.get("hours"));
-    Integer minutes = Integer.parseInt((String) data.get("minutes"));
+    Integer hours, minutes;
+    try {
+      hours = Integer.parseInt((String) data.get("hours"));
+      minutes = Integer.parseInt((String) data.get("minutes"));
+    } catch (NumberFormatException e) {
+      hours = null;
+      minutes = null;
+    }
     String resource = (String) data.get("resource");
     String action = (String) data.get("action");
 

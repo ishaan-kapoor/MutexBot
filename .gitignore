@@ -9,3 +9,4 @@ bin
 Resources
 *.patch
 ngrok_proxy
+.vscode
