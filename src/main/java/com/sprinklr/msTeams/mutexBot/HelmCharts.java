@@ -204,5 +204,9 @@ public class HelmCharts {
     deletedCharts.forEach(chartName -> chartNameService.delete(chartName));
 
     System.out.println("\nSynced DB");
+    System.out.println("\nRefreshing Cache");
+    resourceService.refreshCache();
+    System.out.println("\nCache Refreshed");
+
   }
 }
