@@ -32,6 +32,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAsync
 @Import({ BotController.class })
 public class Application extends BotDependencyConfiguration {
+  /**
+   * @param args for command line arguments
+   */
   public static void main(String[] args) {
     SpringApplication.run(Application.class, args);
   }

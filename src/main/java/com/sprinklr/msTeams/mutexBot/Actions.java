@@ -38,6 +38,19 @@ public class Actions {
   private HelmCharts helmConnector;
   private final static Object mutex = new Object();
 
+  /**
+   * Constructs a LogsController with the specified services.
+   * 
+   * @param resourceService the service to handle resources
+   * @param userService the service to handle user information
+   * @param reservationLogService the service to handle reservation logs
+   * @param monitorLogService the service to handle monitor logs
+   * @param chartNameService the service to handle chart names
+   * @param userInput the class to handle user inputs like cards
+   * @param helmConnector the class to connect to helmRepository
+   * @param appId ID of the Teams bot (from Azure)
+   * @param appPassword client secret of the bot (from Azure)
+   */
   @Autowired
   public Actions(
       ResourceService resourceService,

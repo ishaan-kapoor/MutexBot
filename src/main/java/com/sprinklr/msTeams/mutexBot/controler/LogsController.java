@@ -22,11 +22,7 @@ import com.sprinklr.msTeams.mutexBot.service.ReservationLogService;
 import com.sprinklr.msTeams.mutexBot.service.UserService;
 
 /**
- * Constructs a LogsController with the specified services.
- * 
- * @param monitorLogService     the service to handle monitor logs
- * @param reservationLogService the service to handle reservation logs
- * @param userService           the service to handle user information
+ * Class to present reservation and monitor logs in a calendar like UI.
  */
 @RestController
 public class LogsController {
@@ -35,6 +31,13 @@ public class LogsController {
   private final ReservationLogService reservationLogService;
   private final UserService userService;
 
+  /**
+   * Constructs a LogsController with the specified services.
+   *
+   * @param monitorLogService     the service to handle monitor logs
+   * @param reservationLogService the service to handle reservation logs
+   * @param userService           the service to handle user information
+   */
   @Autowired
   public LogsController(
       MonitorLogService monitorLogService,
