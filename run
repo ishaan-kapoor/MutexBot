@@ -2,5 +2,8 @@
 export GL="glpat-ySE_axhY1EmDgiFMn4sh"
 # export DB="mongodb://localhost:27017"
 export DB="mongodb+srv://admin:learning@testcluster.9xdkqg5.mongodb.net/?retryWrites=true&w=majority&appName=TestCluster"
-mvn install && java -jar target/MutexBot-1.0.jar
+
+set -e
+mvn clean package
+java -jar target/MutexBot-1.0.jar
 mvn clean
