@@ -33,8 +33,6 @@ public class Utils {
   public static final String RESOURCE_ADAPTIVE_CARD_TEMPLATE = "/resourceDropDown.json";
   public static final String UNSURE_ACTION_MESSAGE = "Unsure about the action on Resource: \"%s\".\nRecieved action: \"%s\".";
 
-  public static final String URL = "http://localhost:3978/";
-
   // --------------------------------------------------------------------------
 
   /**

@@ -195,7 +195,7 @@ public class Actions {
       if (argUser == null) {
         return MessageFactory.text("User not found");
       }
-      return MessageFactory.text("[Report for user: ](" + Utils.URL + "logs/?perspective=user&user=" + argUser.getId() + ")" + Utils.user2hyperlink(argUser));
+      return MessageFactory.text("[Report for user: ](" + MutexBot.URL + "logs/?perspective=user&user=" + argUser.getId() + ")" + Utils.user2hyperlink(argUser));
     }
 
     boolean exists = chartNameService.exists(resource_name);
@@ -252,7 +252,7 @@ public class Actions {
       if (!exists) {
         return MessageFactory.text("Resource \"" + resource_name + "\" not found.");
       }
-      return MessageFactory.text("[Report for resource: ](" + Utils.URL + "logs/?perspective=resource&resource=" + resource_name + ")" + resource_name);
+      return MessageFactory.text("[Report for resource: ](" + MutexBot.URL + "logs/?perspective=resource&resource=" + resource_name + ")" + resource_name);
     }
 
     return MessageFactory.text("Invalid admin action: " + action);

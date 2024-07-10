@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * The MutexBot class handles the core functionality of the Teams bot for
@@ -27,6 +28,7 @@ public class MutexBot extends TeamsActivityHandler {
   private final UserInput userInput;
   private final Actions actions;
   private final static String helpMessage = "Commands:<br> &emsp;Reserve \\<Resource\\> [for \\<Duration\\>]<br> &emsp;Release \\<Resource\\><br> &emsp;Status \\<Resource\\><br> &emsp;Monitor \\<Resource\\> [for \\<Duration\\>]<br> &emsp;StopMonitoring \\<Resource\\><br>e.g.<br> &emsp;Reserve prod:qa6 for 1h12m<br> &emsp;StopMonitoring dev:qa6<br><br>Admin only commands:<br> &emsp;Sync DB<br> &emsp;Sync Cache<br> &emsp;CreateResource \\<Resource\\><br> &emsp;DeleteResource \\<Resource\\><br> &emsp;CreateChartName \\<ChartName\\><br> &emsp;DeleteChartName \\<ChartName\\><br> &emsp;ForceRelease \\<Resource\\><br> &emsp;MakeAdmin \\<User Email\\><br> &emsp;DismissAdmin \\<User Email\\><br> &emsp;ResourceLog \\<Resource\\><br> &emsp;UserLog \\<User Email\\><br><br><hr>Send \"Hello\" for welcome card.<br>Send \"run\" to select a resource.";
+  public static String URL;
 
   /**
    * Constructs a MutexBot instance with the specified services.
@@ -34,12 +36,14 @@ public class MutexBot extends TeamsActivityHandler {
    * @param userService The service responsible for user-related operations.
    * @param userInput   The class that handles user input.
    * @param actions     The class that defines actions the bot can perform.
+   * @param url         The URL of the deployed bot.
    */
   @Autowired
-  public MutexBot(UserService userService, UserInput userInput, Actions actions) {
+  public MutexBot(UserService userService, UserInput userInput, Actions actions, @Value("${URL}") String url) {
     this.userService = userService;
     this.userInput = userInput;
     this.actions = actions;
+    MutexBot.URL = url;
   }
 
   /**

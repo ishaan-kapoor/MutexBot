@@ -8,6 +8,7 @@ import com.microsoft.bot.integration.spring.BotDependencyConfiguration;
 
 import com.sprinklr.msTeams.mutexBot.service.UserService;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -47,11 +48,12 @@ public class Application extends BotDependencyConfiguration {
    * @param userService The service responsible for user-related operations.
    * @param userInput   The class that handles user input.
    * @param actions     The class that defines actions the bot can perform.
+   * @param url         The URL of the deployed bot.
    * @return An instance of {@link MutexBot}.
    */
   @Bean
-  public MutexBot getBot(UserService userService, UserInput userInput, Actions actions) {
-    return new MutexBot(userService, userInput, actions);
+  public MutexBot getBot(UserService userService, UserInput userInput, Actions actions,  @Value("${URL}") String url) {
+    return new MutexBot(userService, userInput, actions, url);
   }
 
   /**
