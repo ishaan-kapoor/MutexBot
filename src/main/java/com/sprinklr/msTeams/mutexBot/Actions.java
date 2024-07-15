@@ -39,7 +39,7 @@ public class Actions {
   private final static Object mutex = new Object();
 
   /**
-   * Constructs a LogsController with the specified services.
+   * Constructs an Actions class with the specified services.
    * 
    * @param resourceService the service to handle resources
    * @param userService the service to handle user information

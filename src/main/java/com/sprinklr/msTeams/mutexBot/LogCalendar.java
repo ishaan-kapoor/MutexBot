@@ -32,7 +32,7 @@ public class LogCalendar {
   private final UserService userService;
 
   /**
-   * Constructs a LogsController with the specified services.
+   * Constructs a LogCalendar with the specified services.
    *
    * @param monitorLogService     the service to handle monitor logs
    * @param reservationLogService the service to handle reservation logs
