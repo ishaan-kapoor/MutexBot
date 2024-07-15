@@ -4,6 +4,11 @@ export GL="glpat-ySE_axhY1EmDgiFMn4sh"
 export DB="mongodb+srv://admin:learning@testcluster.9xdkqg5.mongodb.net/?retryWrites=true&w=majority&appName=TestCluster"
 
 set -e
-mvn clean package
-java -jar target/MutexBot-1.0.jar
 mvn clean
+mvn javadoc:javadoc
+mkdir -p src/main/resources/static/docs
+cp -r target/site/apidocs/* src/main/resources/static/docs/
+mvn package
+java -jar target/MutexBot-1.0.jar || true
+mvn clean
+rm -rf src/main/resources/static/docs/
