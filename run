@@ -9,6 +9,6 @@ mvn javadoc:javadoc
 mkdir -p src/main/resources/static/docs
 cp -r target/site/apidocs/* src/main/resources/static/docs/
 mvn package
+rm -rf src/main/resources/static/docs/
 java -jar target/MutexBot-1.0.jar || true
 mvn clean
-rm -rf src/main/resources/static/docs/

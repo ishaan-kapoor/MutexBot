@@ -1,0 +1,36 @@
+stages:
+  - build
+  - deploy
+
+image: maven:3.9.8-jdk-17
+
+variables:
+  GL: "glpat-ySE_axhY1EmDgiFMn4sh"
+  DB: "mongodb+srv://admin:learning@testcluster.9xdkqg5.mongodb.net/?retryWrites=true&w=majority&appName=TestCluster"
+
+cache:
+  paths:
+    - .m2/repository
+
+before_script:
+  - mvn clean
+  - rm -rf src/main/resources/static/docs/
+
+build_job:
+  stage: build
+  script:
+    - mvn javadoc:javadoc
+    - mkdir -p src/main/resources/static/docs
+    - cp -r target/site/apidocs/* src/main/resources/static/docs/
+    - mvn package
+    - rm -rf src/main/resources/static/docs/
+
+deploy_job:
+  stage: deploy
+  script:
+    - java -jar target/MutexBot-1.0.jar
+
+after_script:
+  - mvn clean
+  - rm -rf src/main/resources/static/docs/
+
