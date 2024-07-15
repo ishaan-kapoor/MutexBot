@@ -1,4 +1,4 @@
-package com.sprinklr.msTeams.mutexBot.controler;
+package com.sprinklr.msTeams.mutexBot;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +25,7 @@ import com.sprinklr.msTeams.mutexBot.service.UserService;
  * Class to present reservation and monitor logs in a calendar like UI.
  */
 @RestController
-public class LogsController {
+public class LogCalendar {
 
   private final MonitorLogService monitorLogService;
   private final ReservationLogService reservationLogService;
@@ -39,7 +39,7 @@ public class LogsController {
    * @param userService           the service to handle user information
    */
   @Autowired
-  public LogsController(
+  public LogCalendar(
       MonitorLogService monitorLogService,
       ReservationLogService reservationLogService,
       UserService userService) {
