@@ -6,5 +6,78 @@ In addition, the bot enhances collaboration by managing all bookings within Micr
 To further aid in planning, the bot also sends out notifications about upcoming bookings and potential conflicts. This proactive approach helps teams to effectively plan ahead, avoid last-minute surprises, and ensure uninterrupted work.
 Overall, the Resource Reservation Bot for Microsoft Teams is a powerful tool designed to foster collaboration, improve resource management, and enhance operational efficiency in a seamless and user-friendly manner.
 
-##### References:
-- https://github.com/OfficeDev/Microsoft-Teams-Samples/tree/main/samples/bot-conversation/java
+## Table of Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Endpoints](#endpoints)
+- [Testing](#testing)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/ishaan-kapoor/MutexBot.git
+cd MutexBot
+```
+2. Run the script
+```bash
+./run
+```
+
+OR
+
+2.1. Package the application
+```bash
+mvn clean package
+```
+2.2. Run the application:
+```bash
+java -jar ./target/MutexBot-1.0.jar
+```
+
+## Usage
+To use the bot, you need to configure it with your Microsoft Teams App ID and Password. The bot interacts with users through Microsoft Teams, allowing them to perform various actions on resources.
+
+## Endpoints
+### Log Calendar
+- Get user/resource logs: `/logs`
+    - Parameters:
+        - `resource`: (Optional) Name of the resource
+        - `user`: (Optional) ID of the user
+        - `perspective`: (Optional) Perspective of the Logs (resource or user)
+    - Example
+      ```curl
+      GET /logs?resource=testResource&user=testUser&perspective=resource
+      ```
+- Get documentation of each package, class and method: `/docs/index.html`
+    - Example
+      ```curl
+      GET /docs/index.html
+      ```
+
+## Testing
+The project includes unit tests for various components. To run the tests, use the following command:
+```bash
+mvn test
+```
+
+## Configuration
+The application requires configuration for Microsoft Teams integration. Add the following properties to your `application.properties` file:
+```properties
+URL=url-where-the-bot-is-deployed
+spring.data.mongodb.uri=uri-of-the-mongo-db-database
+gitlab.token=gitlab-token-with-access-to-helm-charts
+```
+
+## Contributing
+Contributions are welcome! Please follow these steps to contribute:
+
+1. Fork the repository.
+2. Create a new branch.
+3. Make your changes.
+4. Submit a pull request.
+Please ensure your code includes appropriate tests.
+
