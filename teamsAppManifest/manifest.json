@@ -11,8 +11,8 @@
     "termsOfUseUrl": "https://www.teams.com/termsofuser"
   },
   "icons": {
-    "outline": "icon-outline.png",
-    "color": "icon-color.png"
+    "outline": "outline.png",
+    "color": "color.png"
   },
   "name": {
     "short": "Jenkins MutexBot",
@@ -34,28 +34,8 @@
           "scopes": ["personal", "groupchat", "team"],
           "commands": [
             {
-              "title": "Reserve",
-              "description": "Reserve the resource."
-            },
-            {
-              "title": "Release",
-              "description": "Release the resource."
-            },
-            {
-              "title": "Monitor",
-              "description": "Monitor the resource and notify when it is reserved or released."
-            },
-            {
-              "title": "for",
-              "description": "Specify the duration of the action."
-            },
-            {
-              "title": "Status",
-              "description": "Get the status of the resource."
-            },
-            {
-              "title": "StopMonitoring",
-              "description": "Stop recieving notifications about the resource."
+              "title": "Hello!",
+              "description": "Start the bot."
             }
           ]
         }

@@ -183,7 +183,6 @@ public class HelmCharts {
    */
   @Scheduled(cron = "0 0 * * * ?")
   public synchronized void syncDB() {
-    if (true) { return; }
     System.out.println("\nGetting Repo");
     getRepo();
     System.out.println("\nGot Repo");
