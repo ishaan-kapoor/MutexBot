@@ -6,6 +6,10 @@ In addition, the bot enhances collaboration by managing all bookings within Micr
 To further aid in planning, the bot also sends out notifications about upcoming bookings and potential conflicts. This proactive approach helps teams to effectively plan ahead, avoid last-minute surprises, and ensure uninterrupted work.
 Overall, the Resource Reservation Bot for Microsoft Teams is a powerful tool designed to foster collaboration, improve resource management, and enhance operational efficiency in a seamless and user-friendly manner.
 
+### Note:
+All secrets like database uri, gitlab tokens etc, have been revoked.
+
+
 ## Table of Contents
 
 - [Installation](#installation)
